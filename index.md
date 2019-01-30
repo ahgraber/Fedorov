@@ -8,9 +8,46 @@ description:
 
 # Background: What is Choice Research?
 
-Pasta Example.  What is choice research?  
+Let's say you're having trouble deciding what to have for dinner.  You know you want a pasta dish, but you don't know which dish - there are so many options!  You have to choose the noodle shape, the sauce, and what kind of topping you want.  
+
+
+![Pasta](/assets/Picture1.png)  
+*Pasta Options (source: google image search)*  
+
+
+Choice research could help you make your decision.  Using a choice research design, you could ennumerate the various options for each attribute and come up with a map defining a pasta dish based on the various attributes:
+
+
+![Pasta Design](/assets/Picture2.png)  
+*Pasta Choice Design*  
+
+
+Notice how the pasta dish in the picture is dish #2 in the chart on the right; it is composed of Spaghetti (pasta level 0), Pesto (sauce level 0), and topped with Parmasen Cheese (topping option 1).  
+
+
+If you had to try every possible pasta dish in the world, it would be impossible - there are so many types!  But by defining pasta by its attributes, you can select a small subset of the entire variety and use a multinomial logit model to understand which attributes are your favorite.  Then, you could make yourself your personal ultimate pasta dish by combining all of your favorite attributes.  
+
+
+The pasta story is a simplistic example of choice research, but it should give you the intuition for why choice research is important, and how you can use a smaller portion of all possible options to associate value or importance with attribute levels.
+
 
 # Business Problem
+
+A pharmaceutical market research firm uses simulated patient treatment as a method to understand physician demand in specific treatment areas.  In this method, a limited universe of patients is designed in order to represent as much of the actual disease area patient universe as possible.  Patients are defined by multiple attributes (age, gender, BMI, etc.), and each attribute may have multiple levels (male/female, etc.).  The breakdown of attribute levels is provided by a specified distribution to be achieved in the simulated universe.  These simulated patients are then treated, where a given treatment (yes/no) can be related back to the patient design.
+
+
+Patient design in this manner is a specialized choice methodology somewhat analogous to conjoint.  In both conjoint and patient simulation, respondents are forced to make a decision based on a stimulus that is composed of multiple attributes and levels (Kuhfeld, Huber, & Zwerina, 1996).  When the number of attributes and levels grow beyond a small set, presenting the full design (full factorial) becomes a challenge due to both the number of combinations required and the amount of burden placed on the respondent.  Fractional factorial designs, then, seek to allow the research to eke as much data out of the analysis as possible but use a much more limited subset of stimuli.  
+
+
+Much research has been done on the topic of identifying efficient experimental designs (Hauser & Rao, 2002).  The current standard seems to be D-error – roughly, the geometric mean of the eigenvalues of the covariance matrix (D-efficiency is the inverse of D-error) (Kuhfeld, Huber, & Zwerina, 1996). Thus, the goal of an efficient design is to minimize D-error (thus maximizing D-efficiency).  It has been shown that D-efficient designs satisfy four principles: orthogonality, level balance, minimal overlap, and utility balance: 
+ 
+ 
+>“Orthogonality is satisfied when the levels of each attribute vary independently of one another.  Level balance is satisfied when the levels of each attribute appear with equal frequency.  Minimal overlap is satisfied when the alternatives within each choice set have nonoverlapping attribute levels.  Utility balance is satisfied when the utilities of alternatives within choice sets are the same” (Kuhfeld, Huber, & Zwerina, 1996).
+
+
+The standard method to identify an efficient design is to use one of any variant of the Fedorov Algorithm which, given a starting design, recursively makes exchange(s) that reduce D-error until some convergence criteria is met.  This method is susceptible to local minima; it may be necessary to run multiple iterations of the Fedorov Algorithm with different random starting designs to find the most efficient design (Kuhfeld, Huber, & Zwerina, 1996).
+
+
 
 Adding constraints
 
