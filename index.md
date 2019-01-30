@@ -731,7 +731,7 @@ $$
 \begin{aligned} \frac { \Sigma z _ { 0 } ^ { 1 } } { N } & = .25 + \delta _ { d } ^ { A 0 } \\ \frac { \sum Z _ { 1 } ^ { 1 } } { N } & = .5 + \delta _ { d } ^ { A 1 } \\ \frac { \sum Z _ { 2 } ^ { 1 } } { N } & = 25 + \delta _ { d } ^ { A 2 } \end{aligned}
 $$
 
-... etc.
+$$\qquad$$ ... etc.
 
 $$\qquad$$ Interaction constraints (T2D diagnosis and A1C level):
 
