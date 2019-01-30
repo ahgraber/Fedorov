@@ -14,11 +14,17 @@ Pasta Example.  What is choice research?
 
 Adding constraints
 
+<details><summary>D-Optimality</summary>
+  <div markdown = "1">
+    
 # D-Optimality
 ### Theory
 
 ### Fedorov Algorithm
 Lay out base optimization problem
+
+  </div>
+</details>
 
 <details><summary>Adding Constraints, Pt 1</summary>
   <div markdown = "1">
