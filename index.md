@@ -114,25 +114,26 @@ $$
 $$  
 
 Subject to:
-    Age group proportions:
+
+>Age group proportions:
 
 $$
 \begin{array} { l } { \frac { \sum Z _ { 0 } } { N } = .25 + \delta _ { Z 0 } } \\ { \frac { \sum Z _ { 1 } } { N } = .5 + \delta _ { Z 1 } } \\ { \frac { \sum Z _ { 2 } } { N } = .25 + \delta _ { Z 1 } } \end{array}
 $$
 
-    Gender proportions:
+>Gender proportions:
 
 $$
 \begin{array} { l } { \frac { \sum Y _ { 0 } } { N } = .5 + \delta _ { Y 0 } } \\ { \frac { \sum Y _ { 1 } } { N } = .5 + \delta _ { Y 0 } } \end{array}
 $$
 
-    BMI proportions:
+>BMI proportions:
 
 $$
 \begin{array} { l } { \frac { \sum W _ { 0 } } { N } = .25 + \delta _ { W 0 } } \\ { \frac { \sum W _ { 1 } } { N } = .25 + \delta _ { W 1 } } \\ { \frac { \sum W _ { 2 } } { N } = .5 + \delta _ { W 2 } } \end{array}
 $$
 
-    Binary constraints: $$ W , Y , Z \in \{ 0,1 \} $$
+>Binary constraints: $$ W , Y , Z \in \{ 0,1 \} $$
 
 
 
