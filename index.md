@@ -103,11 +103,11 @@ $$
 
 With decision variables $$ A, B, G $$ representing attributes:  
 
-: Age:  $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the age group classification for each patient i)*
+$$\qquad$$ Age:  $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the age group classification for each patient i)*
     
-: Gender: $$ G _ { i } , \quad G \in \{ 0,1 \} , i = 1 , \ldots , n $$ *(i.e., the gender classification for each patient i)*
+$$\qquad$$ Gender: $$ G _ { i } , \quad G \in \{ 0,1 \} , i = 1 , \ldots , n $$ *(i.e., the gender classification for each patient i)*
     
-: BMI: $$ B _ { i } , \quad B \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the BMI classification for each patient i)*
+$$\qquad$$ BMI: $$ B _ { i } , \quad B \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the BMI classification for each patient i)*
 
 
 For easier constraint formulation, we can use the Dantzig-Wolfe reformulation to rewrite our integer variables where the capital letter represents the binary variable series replacing an integer variable, and the lowercase letter represents the integer set of levels permissible for the given attribute:
@@ -138,10 +138,11 @@ $$
 
 $$\qquad$$ Binary constraints: $$ W , Y , Z \in \{ 0,1 \} $$
 
+$$\qquad$$ Interaction slacks: While not specified in the toy problem, it is entirely possible that we may have interactions specified in the design (i.e., men cannot be pregnant).  In these cases, the slacks are the count of the impossible interactions.  We will penalize these interaction slacks twice because they are more costly to the design than a missed distribution. 
 
+### Constrained D-Optimality
 
-## Constrained D-Optimality
-### Theory
+For our discrete-choice design, the information matrix of an *n*-point design is $$\mathrm { M } = X _ { n } ^ { T } X _ { n } $$, where $$ X $$ is an $$ n \times p $$ design matrix. 
 
 ### Modified Fedorov Algorithm
 
