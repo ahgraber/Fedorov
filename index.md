@@ -3,6 +3,7 @@ layout: page
 title: D-Optimality with Level Balance Constraints
 tagline: Optimizing multiply-constrained matrices for choice research
 description:
+use_math: true
 ---
 *Andrew Armstrong, Alex Graber*
 
