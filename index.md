@@ -28,11 +28,12 @@ Notice how the pasta dish in the picture is dish #2 in the chart on the right; i
 If you had to try every possible pasta dish in the world, it would be impossible - there are so many types!  But by defining pasta by its attributes, you can select a small subset of the entire variety and use a multinomial logit model to understand which attributes are your favorite.  Then, you could make yourself your personal ultimate pasta dish by combining all of your favorite attributes.  
 
 
-The pasta story is a simplistic example of choice research, but it should give you the intuition for why choice research is important, and how you can use a smaller portion of all possible options to associate value or importance with attribute levels.  This raises a key question: *How can you identify the best subset to use that maximizes the information gained from the research?*
-
+<details><summary>D-Optimality</summary>
+  <div markdown = "1">
 
 ## D-Optimality
-### Theory
+The pasta story is a simplistic example of choice research, but it should give you the intuition for why choice research is important, and how you can use a smaller portion of all possible options to associate value or importance with attribute levels.  This raises a key question: *How can you identify the best subset to use that maximizes the information gained from the research?*
+
 It is clear that when the number of attributes and levels grow beyond a small set, presenting the full design (full factorial) becomes a challenge due to both the number of combinations required and the amount of burden placed on the respondent.  Fractional factorial designs, then, seek to allow the research to eke as much data out of the analysis as possible but use a much more limited subset of stimuli – but how do we know what the best (i.e., most efficient) fractional factorial design is?
 
 
@@ -47,6 +48,9 @@ D-efficient designs satisfy four principles (Kuhfeld, Huber, & Zwerina, 1996):
 
 
 The standard method to identify an efficient design is to use one of any variant of the **Fedorov Algorithm** which, given a starting design, recursively makes exchange(s) that reduce D-error until some convergence criteria is met.  This method is susceptible to local minima; it may be necessary to run multiple iterations of the Fedorov Algorithm with different random starting designs to find the most efficient design (Kuhfeld, Huber, & Zwerina, 1996).
+
+  </div>
+</details>
 
 
 ## Business Problem
