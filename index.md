@@ -101,7 +101,7 @@ $$
 \left[ \begin{array} { c c c } { A _ { 1 } } & { G _ { 1 } } & { B _ { 1 } } \\ { \vdots } & { \vdots } & { \vdots } \\ { A _ { N } } & { G _ { N } } & { B _ { N } } \end{array} \right]
 $$  
 
-With decision variables $$ A, B, G $$ representing attributes:
+With decision variables $$ A, B, G $$ representing attributes:  
   Age: $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$
 
 
