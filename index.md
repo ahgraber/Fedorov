@@ -6,7 +6,7 @@ description:
 ---
 *Andrew Armstrong, Alex Graber*
 
-# Background
+# Background: What is Choice Research?
 
 Pasta Example.  What is choice research?  
 
