@@ -95,8 +95,16 @@ Expanding out all possibilities into the entire candidate set, this would be 3\*
 ### Full Problem
 
 ### Model Definition
+  </div>
+</details>
 
+<details><summary>Conclusion</summary>
+  <div markdown = "1">
+    
+## Conclusion
 ### Results & Performance
+
+### Takeaways & Next Steps
 
   </div>
 </details>
