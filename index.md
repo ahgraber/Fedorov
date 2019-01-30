@@ -87,6 +87,19 @@ Practically speaking, the number of attributes is limited to no more than 25, ea
 
 ### Model Definition
 
+Our goal is to maximize the weighted d-optimality of the design matrix, penalized for missing distributions and impossible variable interactions, and subject to the distributions of each attribute’s levels and interactions, where each attribute’s level is represented by a binary variable.
+
+Objective Function (Wanida Limmun, 2012): 
+
+$$ 
+\text { maximize } f ( X ) = 100 \frac { \operatorname { Det } \left( X ^ { T } X \right) ^ { 1 / p } } { N } - \lambda \sum \left| \delta _ { \text { distribution } } \right| - \lambda ^ { 2 } \sum \left| \delta _ { \text {interaction} } \right|
+$$ 
+
+\\[
+\text { maximize } f ( X ) = 100 \frac { \operatorname { Det } \left( X ^ { T } X \right) ^ { 1 / p } } { N } - \lambda \sum \left| \delta _ { \text { distribution } } \right| - \lambda ^ { 2 } \sum \left| \delta _ { \text {interaction} } \right|
+\\]
+
+
 ## Constrained D-Optimality
 ### Theory
 
@@ -143,7 +156,8 @@ $$
 
 $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$
 
-inline $$ 
+inline 
+$$ 
 \text { maximize } f ( X ) = 100 \frac { \operatorname { Det } \left( X ^ { T } X \right) ^ { 1 / p } } { N } - \lambda \sum \left| \delta _ { \text { distribution } } \right| - \lambda ^ { 2 } \sum \left| \delta _ { \text {interaction} } \right|
 $$ inline
 
