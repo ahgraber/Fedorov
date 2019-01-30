@@ -142,7 +142,22 @@ $$\qquad$$ Interaction slacks: While not specified in the toy problem, it is ent
 
 ### Constrained D-Optimality
 
-For our discrete-choice design, the information matrix of an *n*-point design is $$\mathrm { M } = X _ { n } ^ { T } X _ { n } $$, where $$ X $$ is an $$ n \times p $$ design matrix. 
+For our discrete-choice design, the information matrix of an *n*-point design is 
+
+$$
+\mathrm { M } = X _ { n } ^ { T } X _ { n } 
+$$
+
+where $$ X $$ is an $$ n \times p $$ design matrix. 
+
+Use $$ d \left( x _ { i } \right) = x _ { i } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { i } $$ as variance estimator, where $$ \mathcal { X } _ { i } $$ represents a row. See (Labadi, 2015; Triefenback, 2008) for more details regarding optimality theory.  
+
+To perform a sequential switch, a ‘delta function’ is defined that allows a less expensive update to the objective function value through the determinant of the information matrix as well as a variance estimator for the swap (Triefenback, 2008):
+
+$$
+\begin{array} { l } { \Delta \left( x _ { i } , x _ { j } \right) = d \left( x _ { j } \right) - \left[ d \left( x _ { i } \right) d \left( x _ { j } \right) - d \left( x _ { i } , x _ { j } \right) ^ { 2 } \right] - d \left( x _ { i } \right) } \\ { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) } \end{array} \\ d \left( x _ { i } , x _ { j } \right) = x _ { i } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { j } = x _ { j } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { i }
+$$  
+
 
 ### Modified Fedorov Algorithm
 
