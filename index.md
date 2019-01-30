@@ -167,7 +167,6 @@ $$
 \begin{array} { l } { \Delta \left( x _ { i } , x _ { j } \right) = d \left( x _ { j } \right) - \left[ d \left( x _ { i } \right) d \left( x _ { j } \right) - d \left( x _ { i } , x _ { j } \right) ^ { 2 } \right] - d \left( x _ { i } \right) } \\ { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) } \end{array} \\ d \left( x _ { i } , x _ { j } \right) = x _ { i } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { j } = x _ { j } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { i }
 $$  
 
-
 In order to update our objective function at each iteration, we use the value $$ 1 + \Delta $$ as the ratio between the new and old objective function value. This allows us to pick out row swaps at each iteration that maximize the increase in the objective function. However, we must alter this ratio if we want to penalize the slacks on our proportions in our objective function, while picking out rows that both maximize the increase in the objective function minimize this penalty:
 
 $$
@@ -376,6 +375,7 @@ fedorov <- function(dm, candidate_set, n, lambda=0) {
 </details>
 
 ### Parallelized
+
 We attempted to then parallelize the modified Fedorov Algorithm as it has ‘embarrassingly parallel’ tasks in the exhaustive search.  In step 4 above, it should be possible to calculate $$ \Delta _ { p } \left( \mathbf { x } _ { i } \mathbf { x } _ { j } \right) $$ in parallel.  Our R implementation fails, seemingly due to a bug in the doParallel or foreach libraries that prevent passing a reference class object to the parallel environment.  While the parallel infrastructure may require too much overhead to outperform the non-parallel version for the toy problem (especially given that we must store $$ \Delta _ { p } \left( \mathbf { x } _ { i } \mathbf { x } _ { j } \right) $$ for each pair and sort the final list), we believe that as the problem size grows, the effects of parallelizing would show significant runtime improvements.
 
 
@@ -648,15 +648,20 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
 
 These algorithms outperform our implementations of the modified Fedorov Algorithms.  With lambda=1, our genetic algorithm converges in 22 iterations taking 1.1 seconds to a solution with d-optimality 131 (significantly better than the Fedorov Algorithm, and close to the Fedorov Algorithm’s optimal solution with lambda=0).
 
-![Picture7](/assets/Picture7.jpg)
+
+![Picture7](/assets/Picture7.png)
+
 
 With lambda=0 (no penalty), the genetic algorithm converged in an equivalent 22 iterations over 1.1 seconds to a solution with d-optimality 131, matching the Fedorov Algorithm’s performance in a fraction of the time.
 
-![Picture8](/assets/Picture8.jpg)
+
+![Picture8](/assets/Picture8.png)
+
 
 The parallelized genetic algorithm finds the same solutions but takes approximately 6 times longer due to the overhead of parallelization.  With a larger problem, this overhead becomes negligible and parallelization becomes an asset.  
 
-![Picture9](/assets/Picture9.jpg)
+
+![Picture9](/assets/Picture9.png)
 
   </div>
 </details>
@@ -667,7 +672,75 @@ The parallelized genetic algorithm finds the same solutions but takes approximat
 ## Adding Constraints, Pt 2
 ### Full Problem
 
+As mentioned previously, the number of attributes in the full problem is generally limited to no more than 25, each with at most 5 levels due to the complexity of the simulation, limited respondent pool, and limited number of experiments possible per respondent.  For a Type 2 Diabetes study, we might define patients with 16 attributes, each containing between 2-4 levels: 
+
+
+![Picture4](/assets/Picture4.png)
+
+
+Among the attributes are a Type 2 Diabetes diagnosis (yes or no) and a given patient’s A1C levels (normal, moderate, high, or very high).  As T2D diagnosis and A1C are linked, we have the following interaction constraints: (1) Patients with normal A1C cannot have T2D, and (2) Patients with very high A1C must have T2D.
+
+
+The candidate set for this problem has 30,233,088 different combinations.  As before, we seek to reduce time-in-survey by creating a fractional-factorial design, this time consisting of 50 unique patient profiles.  The 50-profile fractional-factorial design must be as efficient as possible.
+
+
+
+
 ### Model Definition
+
+$$
+\text { maximize } f ( X ) = 100 \frac { \operatorname { Det } \left( X ^ { T } X \right) ^ { 1 / p } } { N } - \lambda \sum \left| \delta _ { \text { distribution } } \right| - \lambda ^ { 2 } \sum \left| \delta _ { \text {interaction} } \right|
+$$
+
+where $$ N $$ is the number of observations, $$ \delta $$ are vectors of relaxation variables, and $$ X $$ is the design matrix consisting of $$ A ^ { j } $$ attributes:
+
+$$
+\left[ \begin{array} { c c c } { A _ { 1 } ^ { 1 } } & { \dots } & { A _ { 1 } ^ { 16 } } \\ { \vdots } & { \ddots } & { \vdots } \\ { A _ { N } ^ { 1 } } & { \dots } & { A _ { N } ^ { 16 } } \end{array} \right]
+$$
+
+With decision variables $$ A ^ { 1 \ldots 16 } $$ representing attributes:
+
+$$\qquad$$ Age:  $$ A _ { i } ^ { 1 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Gender:  $$ A _ { i } ^ { 2 }, \quad A \in \{ 0,1 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Race:  $$ A _ { i } ^ { 3 }, \quad A \in \{ 0,1,2,3 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ BMI:  $$ A _ { i } ^ { 4 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ T2D:  $$ A _ { i } ^ { 5 }, \quad A \in \{ 0,1 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Stroke:  $$ A _ { i } ^ { 6 }, \quad A \in \{ 0,1 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Heart:  $$ A _ { i } ^ { 7 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ LDL:  $$ A _ { i } ^ { 8 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ BP:  $$ A _ { i } ^ { 9 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ A1C:  $$ A _ { i } ^ { 10 }, \quad A \in \{ 0,1,2,3 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Renal:  $$ A _ { i } ^ { 11 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Creatine:  $$ A _ { i } ^ { 12 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ UACR:  $$ A _ { i } ^ { 13 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Tx:  $$ A _ { i } ^ { 14 }, \quad A \in \{ 0,1,2,3 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Heart Hist:  $$ A _ { i } ^ { 15 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+$$\qquad$$ Smoker:  $$ A _ { i } ^ { 16 }, \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$  
+
+Again using the Dantzig-Wolfe reformulation to rewrite our integer variables,  $$ Z $$ represents the binary variable series replacing an integer variable, and $$ k $$ represents the integer set of levels permissible for the given attribute:
+
+$$
+A _ { i } ^ { j } = \sum _ { 0 } ^ { k _ { j } } k Z _ { k } ^ { j } , \quad \text { and } \quad \sum _ { 0 } ^ { k _ { j } } Z _ { k } ^ { j } = 1 , \quad Z _ { k } ^ { j } \in \{ 0,1 \} , k ^ { j } \in A ^ { j }
+$$  
+
+Subject to:
+
+$$\qquad$$ Age group proportions (example) :
+
+$$
+\begin{aligned} \frac { \Sigma z _ { 0 } ^ { 1 } } { N } & = .25 + \delta _ { d } ^ { A 0 } \\ \frac { \sum Z _ { 1 } ^ { 1 } } { N } & = .5 + \delta _ { d } ^ { A 1 } \\ \frac { \sum Z _ { 2 } ^ { 1 } } { N } & = 25 + \delta _ { d } ^ { A 2 } \end{aligned}
+$$
+
+$$\qquad$$ Interaction constraints (T2D diagnosis and A1C level):
+
+$$
+\begin{array} { l } { Z _ { 0 } ^ { 5 } + Z _ { 3 } ^ { 10 } = 1 + \delta _ { i } ^ { 1 } } \\ { Z _ { 1 } ^ { 5 } + Z _ { 0 } ^ { 10 } = 1 + \delta _ { i } ^ { 2 } } \end{array}
+$$
+
+
+
+
+
   </div>
 </details>
 
@@ -693,28 +766,3 @@ The parallelized genetic algorithm finds the same solutions but takes approximat
 
   </div>
 </details>
-
-
-$$
-\left[ \begin{array} { c c c } { A _ { 1 } } & { G _ { 1 } } & { B _ { 1 } } \\ { \vdots } & { \vdots } & { \vdots } \\ { A _ { N } } & { G _ { N } } & { B _ { N } } \end{array} \right]
-$$
-
-$$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$
-
-inline 
-$$ 
-\text { maximize } f ( X ) = 100 \frac { \operatorname { Det } \left( X ^ { T } X \right) ^ { 1 / p } } { N } - \lambda \sum \left| \delta _ { \text { distribution } } \right| - \lambda ^ { 2 } \sum \left| \delta _ { \text {interaction} } \right|
-$$ inline
-
-
-block
-\\[
-\text { maximize } f ( X ) = 100 \frac { \operatorname { Det } \left( X ^ { T } X \right) ^ { 1 / p } } { N } - \lambda \sum \left| \delta _ { \text { distribution } } \right| - \lambda ^ { 2 } \sum \left| \delta _ { \text {interaction} } \right|
-\\]
-block
-
-
-{% raw %}
-$$a^2 + b^2 = c^2$$ --> note that all equations between these tags will not need escaping! 
-{% endraw %}
-
