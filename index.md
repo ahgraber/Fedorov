@@ -182,7 +182,7 @@ This criterion allows us to figure out the row swap that maximizes our objective
 We have implemented a modified Fedorov Algorithm (Labadi, 2015; Triefenback, 2008) that considers the slack of distribution constraints (step 4) when performing the iterative state search:
 1. Calculate the candidate set, the set of all theoretically possible combinations.  Because of the possibility of explosive growth with combinatorics, this will not always be feasible.
 2. Generate an initial n-point design (an arbitrary design with a nonsingular information matrix) that generally obeys distribution constraints
-3. Compute $$ \mathbf { M } , \mathbf { M } ^ { \top } $$, and the determinant of $$ M $$
+3. Compute $$ M,  M  ^ { \top } $$, and the determinant of $$ M $$
 4. Perform an exhaustive search across the design matrix X and the entire candidate set, using the delta function and Δ_p(xi,xj) to identify the pair of points that maximally improve D-optimality, penalizing the slack from the distribution constraints. Perform the swap.
 If efficiency metric is sufficiently close to optimal (or improvement from variance estimator is sufficiently small), stop.  If the iteration limit is reached, stop.
 	Set i=i+1 and return to step 3
