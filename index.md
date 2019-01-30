@@ -7,7 +7,6 @@ use_math: true
 ---
 *Andrew Armstrong, Alex Graber*
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 
 $$
 M = \left( \begin{array}{ccc}
@@ -23,4 +22,7 @@ $$
 $$
 
 
+{% raw %}
+$$a^2 + b^2 = c^2$$ --> note that all equations between these tags will not need escaping! 
+{% endraw %}
 
