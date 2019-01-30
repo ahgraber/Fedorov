@@ -103,11 +103,11 @@ $$
 
 With decision variables $$ A, B, G $$ representing attributes:  
 
->Age:  $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the age group classification for each patient i)*
+: Age:  $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the age group classification for each patient i)*
     
->Gender: $$ G _ { i } , \quad G \in \{ 0,1 \} , i = 1 , \ldots , n $$ *(i.e., the gender classification for each patient i)*
+: Gender: $$ G _ { i } , \quad G \in \{ 0,1 \} , i = 1 , \ldots , n $$ *(i.e., the gender classification for each patient i)*
     
->BMI: $$ B _ { i } , \quad B \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the BMI classification for each patient i)*
+: BMI: $$ B _ { i } , \quad B \in \{ 0,1,2 \} , i = 1 , \ldots , n $$ *(i.e., the BMI classification for each patient i)*
 
 
 For easier constraint formulation, we can use the Dantzig-Wolfe reformulation to rewrite our integer variables where the capital letter represents the binary variable series replacing an integer variable, and the lowercase letter represents the integer set of levels permissible for the given attribute:
@@ -118,25 +118,25 @@ $$
 
 Subject to:
 
->Age group proportions:
+$$\qquad$$ Age group proportions:
 
 $$
 \begin{array} { l } { \frac { \sum Z _ { 0 } } { N } = .25 + \delta _ { Z 0 } } \\ { \frac { \sum Z _ { 1 } } { N } = .5 + \delta _ { Z 1 } } \\ { \frac { \sum Z _ { 2 } } { N } = .25 + \delta _ { Z 1 } } \end{array}
 $$
 
->Gender proportions:
+$$\qquad$$ Gender proportions:
 
 $$
 \begin{array} { l } { \frac { \sum Y _ { 0 } } { N } = .5 + \delta _ { Y 0 } } \\ { \frac { \sum Y _ { 1 } } { N } = .5 + \delta _ { Y 0 } } \end{array}
 $$
 
->BMI proportions:
+$$\qquad$$ BMI proportions:
 
 $$
 \begin{array} { l } { \frac { \sum W _ { 0 } } { N } = .25 + \delta _ { W 0 } } \\ { \frac { \sum W _ { 1 } } { N } = .25 + \delta _ { W 1 } } \\ { \frac { \sum W _ { 2 } } { N } = .5 + \delta _ { W 2 } } \end{array}
 $$
 
->Binary constraints: $$ W , Y , Z \in \{ 0,1 \} $$
+$$\qquad$$ Binary constraints: $$ W , Y , Z \in \{ 0,1 \} $$
 
 
 
