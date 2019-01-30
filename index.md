@@ -166,7 +166,7 @@ $$
 In order to update our objective function at each iteration, we use the value $$ 1 + \Delta $$ as the ratio between the new and old objective function value. This allows us to pick out row swaps at each iteration that maximize the increase in the objective function. However, we must alter this ratio if we want to penalize the slacks on our proportions in our objective function, while picking out rows that both maximize the increase in the objective function minimize this penalty:
 
 $$
-\begin{array} { c } { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - \lambda \sum \delta _ { n e w } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - \lambda \sum \delta _ { n e w } } \\ { p _ { n e w } = \lambda \sum \delta _ { n e w } , p _ { o l d } = \lambda \sum \delta _ { o l d } } \end{array} \\ \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - p _ { n e w } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - p _ { n e w } \\ \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - \lambda \sum \delta _ { o l d } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - p _ { o l d } // 
+\begin{array} { c } { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - \lambda \sum \delta _ { n e w } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - \lambda \sum \delta _ { n e w } } \\ { p _ { n e w } = \lambda \sum \delta _ { n e w } , p _ { o l d } = \lambda \sum \delta _ { o l d } } \end{array} \\ \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - p _ { n e w } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - p _ { n e w } \\ \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - \lambda \sum \delta _ { o l d } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - p _ { o l d } \\ 
 \frac { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - p _ { n e w } } { \operatorname { det } \left( X _ { \text {old} } ^ { T } X _ { \text {old} } \right) - p _ { \text {old} } } = \frac { \operatorname { det } \left( X _ { \text {old} } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - p _ { \text {new} } } { \operatorname { det } \left( X _ { \text {old} } ^ { T } X _ { \text {old} } \right) - p _ { \text {old} } }
 $$
 
@@ -179,6 +179,13 @@ $$
 This criterion allows us to figure out the row swap that maximizes our objective function, given that the slacks are penalized. It also allows us to terminate the algorithm as the improvement $$ \Delta _ { p } $$ converges to zero, i.e. the marginal improvement of another swap becomes trivial.
 
 ### Modified Fedorov Algorithm
+We have implemented a modified Fedorov Algorithm (Labadi, 2015; Triefenback, 2008) that considers the slack of distribution constraints (step 4) when performing the iterative state search:
+1. Calculate the candidate set, the set of all theoretically possible combinations.  Because of the possibility of explosive growth with combinatorics, this will not always be feasible.
+2. Generate an initial n-point design (an arbitrary design with a nonsingular information matrix) that generally obeys distribution constraints
+3. Compute $$ \mathbf { M } , \mathbf { M } ^ { \top } $$, and the determinant of $$ M $$
+4. Perform an exhaustive search across the design matrix X and the entire candidate set, using the delta function and Δ_p(xi,xj) to identify the pair of points that maximally improve D-optimality, penalizing the slack from the distribution constraints. Perform the swap.
+If efficiency metric is sufficiently close to optimal (or improvement from variance estimator is sufficiently small), stop.  If the iteration limit is reached, stop.
+	Set i=i+1 and return to step 3
 
 ### Parallelized
 
