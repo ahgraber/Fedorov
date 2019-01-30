@@ -102,7 +102,7 @@ $$
 $$  
 
 With decision variables $$ A, B, G $$ representing attributes:  
-  Age: $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$
+    Age:  $$ A _ { i } , \quad A \in \{ 0,1,2 \} , i = 1 , \ldots , n $$
 
 
 ## Constrained D-Optimality
