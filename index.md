@@ -28,6 +28,8 @@ Notice how the pasta dish in the picture is dish #2 in the chart on the right; i
 If you had to try every possible pasta dish in the world, it would be impossible - there are so many types!  But by defining pasta by its attributes, you can select a small subset of the entire variety and use a multinomial logit model to understand which attributes are your favorite.  Then, you could make yourself your personal ultimate pasta dish by combining all of your favorite attributes.  
 
 
+
+
 <details><summary>D-Optimality</summary>
   <div markdown = "1">
 
@@ -53,6 +55,8 @@ The standard method to identify an efficient design is to use one of any variant
 </details>
 
 
+
+
 ## Business Problem
 
 A pharmaceutical market research firm uses simulated patient treatment as a method to understand physician demand in specific treatment areas.  In this method, a limited universe of patients is designed in order to represent as much of the actual disease area patient universe as possible.  Patients are defined by multiple attributes (age, gender, BMI, etc.), and each attribute may have multiple levels (male/female, etc.).  The distribution of attribute levels is controlled such that the demographics of the simulated patient universe approximate the real patient universe.  These simulated patients are then treated, where a given treatment (yes/no) can be related back to the patient design.
@@ -61,6 +65,9 @@ A pharmaceutical market research firm uses simulated patient treatment as a meth
 Patient simulation research in this manner is a specialized choice methodology somewhat analogous to conjoint.  In both conjoint and patient simulation, respondents are forced to make a decision based on a stimulus that is composed of multiple attributes and levels (Kuhfeld, Huber, & Zwerina, 1996).  There are two key differences between conjoint (the pasta example) and patient simulation:
 1. The design for patient simulation inherently contains *d-error* as a result of violating the principle of **level balance**:  Since the goal is for the simulated patient universe to map to the actual patient universe, the researcher may need to control for the distribution of levels within each attribute.  
 2. Certain attributes and levels may have required interactions (i.e., a patient must be female to be pregnant), potentially violating **orthogonality** and **minimal overlap**.  
+
+
+
 
 <details><summary>Adding Constraints, Pt 1</summary>
   <div markdown = "1">
@@ -102,16 +109,14 @@ Expanding out all possibilities into the entire candidate set, this would be 3\*
   </div>
 </details>
 
-<details><summary>Conclusion</summary>
-  <div markdown = "1">
+
+
     
 ## Conclusion
 ### Results & Performance
 
 ### Takeaways & Next Steps
 
-  </div>
-</details>
 
 <details><summary>Bibliography</summary>
   <div markdown = "1">
