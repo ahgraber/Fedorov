@@ -6,6 +6,48 @@ description:
 ---
 *Andrew Armstrong, Alex Graber*
 
+# Background
+
+Pasta Example.  What is choice research?  
+
+# Business Problem
+
+Adding constraints
+
+# D-Optimality
+### Theory
+
+### Fedorov Algorithm
+Lay out base optimization problem
+
+<details><summary>Adding Constraints, Pt 1</summary>
+  <div markdown = "1">
+# Adding Constraints I
+### Toy Problem 
+
+
+### Model Definition
+
+# Constrained D-Optimality
+### Theory
+
+### Modified Fedorov Algorithm
+
+#### Parallelized
+
+### Genetic Algorithm
+
+  </div>
+</details>
+
+<details><summary>Adding Constraints, Pt 2</summary>
+  <div markdown = "1">
+# Adding Constraints II
+### Full Problem
+
+### Model Definition
+  </div>
+</details>
 $$
 \left[ \begin{array} { c c c } { A _ { 1 } } & { G _ { 1 } } & { B _ { 1 } } \\ { \vdots } & { \vdots } & { \vdots } \\ { A _ { N } } & { G _ { N } } & { B _ { N } } \end{array} \right]
 $$
