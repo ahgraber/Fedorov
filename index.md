@@ -22,7 +22,8 @@ Lay out base optimization problem
 
 <details><summary>Adding Constraints, Pt 1</summary>
   <div markdown = "1">
-# Adding Constraints I
+    
+# Adding Constraints, Pt 1
 ### Toy Problem 
 
 
@@ -33,21 +34,45 @@ Lay out base optimization problem
 
 ### Modified Fedorov Algorithm
 
-#### Parallelized
+### Parallelized
+
+#### MFA Results
 
 ### Genetic Algorithm
+
+#### GA Results
 
   </div>
 </details>
 
 <details><summary>Adding Constraints, Pt 2</summary>
   <div markdown = "1">
-# Adding Constraints II
+    
+# Adding Constraints, Pt 2
 ### Full Problem
 
 ### Model Definition
+
+### Results & Performance
+
   </div>
 </details>
+
+<details><summary>Bibliography</summary>
+  <div markdown = "1">
+    
+# Bibliography
+
+1. Hauser, J., & Rao, V. (2002, September). Conjoint Analysis, Related Modeling, and Applications. In IN MARKET RESEARCH AND MODELING: PROGRESS AND PROSPECTS: A TRIBUTE. Kluwer Academic Publishers.
+2.  Kuhfeld, W., Huber, J., & Zwerina, K. (1996, September). A General Method for Constructing Efficient Choice Designs. Retrieved October 2018, from https://faculty.fuqua.duke.edu/~jch8/bio/Papers/Zwerina%20Kuhfeld%20Huber.pdf
+3. Labadi, L. A. (2015, February). Some Refinements on Fedorov’s Algorithms for Constructing D-optimal Designs. Brazilian Journal of Probability and Statistics, 29, 53-70.
+4. Triefenback, F. (2008). Design of Experiments: The D-Optimal Approach and Its Implementation As a Computer Algorithm. Umeå University, Department of Computing Science.
+5. Warren F. Kuhfeld. (2001, January). Multinomial Logit, Discrete Choice Modeling. Retrieved October 2018, from https://www.stat.auckland.ac.nz/~balemi/Choice.pdf
+
+  </div>
+</details>
+
+
 $$
 \left[ \begin{array} { c c c } { A _ { 1 } } & { G _ { 1 } } & { B _ { 1 } } \\ { \vdots } & { \vdots } & { \vdots } \\ { A _ { N } } & { G _ { N } } & { B _ { N } } \end{array} \right]
 $$
