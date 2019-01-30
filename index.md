@@ -731,15 +731,13 @@ $$
 \begin{aligned} \frac { \Sigma z _ { 0 } ^ { 1 } } { N } & = .25 + \delta _ { d } ^ { A 0 } \\ \frac { \sum Z _ { 1 } ^ { 1 } } { N } & = .5 + \delta _ { d } ^ { A 1 } \\ \frac { \sum Z _ { 2 } ^ { 1 } } { N } & = 25 + \delta _ { d } ^ { A 2 } \end{aligned}
 $$
 
+... etc.
+
 $$\qquad$$ Interaction constraints (T2D diagnosis and A1C level):
 
 $$
 \begin{array} { l } { Z _ { 0 } ^ { 5 } + Z _ { 3 } ^ { 10 } = 1 + \delta _ { i } ^ { 1 } } \\ { Z _ { 1 } ^ { 5 } + Z _ { 0 } ^ { 10 } = 1 + \delta _ { i } ^ { 2 } } \end{array}
 $$
-
-
-
-
 
   </div>
 </details>
@@ -750,8 +748,25 @@ $$
 ## Conclusion
 ### Results & Performance
 
+The real-world problem is much too large for our implementation of the Fedorov Algorithm.  With over 1 trillion swaps to calculate per iteration, the problem would take far too long to run to be useful.  However, the larger problem space provides an opportunity to the improvement parallelization brings to our genetic algorithm.  With lambda=1, the initial design has d-optimality 22.9.  With lambda=0, the initial design has ¬d-optimality 59.9.  Results are in the table below:
+
+
+![Picture10](/assets/Picture10.png)
+
+
+We see that the parallel genetic algorithm performed slower than the non-parallelized version but found improved designs.  Additionally, these tests were run with population 100 and limited to 1000 generations.  Tests with larger populations would likely begin to favor the parallel algorithm.  Hypothetically, tests with more generations would also favor the parallel algorithm; however, we came nowhere near the 1000 generation limit in this test.
+
+
 ### Takeaways & Next Steps
 
+It is clear that for even moderately sized problems, the Fedorov Algorithm is unrealistic, regardless of whether we add additional constraints.  We could address this by implementing some sort of preprocessing using the constraints to generate only feasible designs or reduce the candidate set only to feasible combinations before you begin the Fedorov iterations.  While this preprocessing may be time consuming, it would reduce the memory requirements for storing the entire search space.
+
+
+Aside from the size constraints inherent to the Fedorov Algorithm, our modified Fedorov Algorithm seems to move in the wrong direction depending on the initial (random) matrix design.  Upon review, we find that our code chooses poor swaps when updates cause singular or near-singular matrices.  
+
+Additionally, the way we implemented slack penalties for feasibility can cause problems as the eigenvalues may improve but be rejected due to feasibility.  The multiplicative update to d-optimality is fairly natural given that it comes from a geometric mean.  However, once we include the penalty, we start to have additive terms in the objective function.  A multiplicative update doesn’t really work when, for example, lambda = 10 and the penalty term is bigger than the d-optimality term in the objective function.  Our objective function starts negative and becomes more negative with each update because we favor positive deltas. 
+
+In both cases, we could implement a multistep update by checking unconstrained d-optimality, checking for a near/singular matrix result, and then applying the penalty term before deciding whether to swap or not.  This would ensure that we only allow swaps that move our objective function in the correct direction, while choosing among that subset for swaps that are most feasible.
 
 <details><summary>Bibliography</summary>
   <div markdown = "1">
