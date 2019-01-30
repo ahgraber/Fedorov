@@ -81,6 +81,10 @@ As a toy problem, let us consider a patient universe in which patients are defin
 
 Expanding out all possibilities into the entire candidate set, this would be 3\*3\*2\*3 = 54 unique patient profiles.  Given respondent time is expensive, and high respondent burden decreases quality of results, we seek to reduce time-in-survey by creating a fractional-factorial design of 8 unique patient profiles.  As we want to extract as much data from the exercise as possible, the 8-profile fractional-factorial design must be as efficient as possible.
 
+
+Practically speaking, the number of attributes is limited to no more than 25, each with at most 5 levels due to the complexity of the simulation, limited respondent pool, and limited number of experiments possible per respondent.  Thus, at most, the candidate set contains $$ 5 ^ { 25 } $$ (approx. $$ 3 \times 10 ^ { 17 } $$) possibilities – and will generally be significantly smaller as not all 25 attributes are used and most contain fewer than 5 levels.  However, the worst-case scenario requires approximately $$ 2 \times 10 ^ { 10 } $$ gigabytes to merely store the candidate set.  The combinatorics problem explains why stochastic search algorithms such as simulated annealing or genetic algorithms are frequently used instead of an exhaustive search against a complete candidate set.  
+
+
 ### Model Definition
 
 ## Constrained D-Optimality
