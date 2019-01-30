@@ -148,9 +148,13 @@ $$
 \mathrm { M } = X _ { n } ^ { T } X _ { n } 
 $$
 
-where $$ X $$ is an $$ n \times p $$ design matrix. 
+where $$ X $$ is an $$ n \times p $$ design matrix. Use 
 
-Use $$ d \left( x _ { i } \right) = x _ { i } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { i } $$ as variance estimator, where $$ \mathcal { X } _ { i } $$ represents a row. See (Labadi, 2015; Triefenback, 2008) for more details regarding optimality theory.  
+$$ 
+d \left( x _ { i } \right) = x _ { i } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { i } 
+$$ 
+
+as variance estimator, where $$ \mathcal { X } _ { i } $$ represents a row. See (Labadi, 2015; Triefenback, 2008) for more details regarding optimality theory.  
 
 To perform a sequential switch, a ‘delta function’ is defined that allows a less expensive update to the objective function value through the determinant of the information matrix as well as a variance estimator for the swap (Triefenback, 2008):
 
@@ -158,6 +162,21 @@ $$
 \begin{array} { l } { \Delta \left( x _ { i } , x _ { j } \right) = d \left( x _ { j } \right) - \left[ d \left( x _ { i } \right) d \left( x _ { j } \right) - d \left( x _ { i } , x _ { j } \right) ^ { 2 } \right] - d \left( x _ { i } \right) } \\ { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) } \end{array} \\ d \left( x _ { i } , x _ { j } \right) = x _ { i } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { j } = x _ { j } ^ { T } \left( \mathrm { X } _ { n } ^ { T } \mathrm { X } _ { n } \right) ^ { - 1 } x _ { i }
 $$  
 
+
+In order to update our objective function at each iteration, we use the value $$ 1 + \Delta $$ as the ratio between the new and old objective function value. This allows us to pick out row swaps at each iteration that maximize the increase in the objective function. However, we must alter this ratio if we want to penalize the slacks on our proportions in our objective function, while picking out rows that both maximize the increase in the objective function minimize this penalty:
+
+$$
+\begin{array} { c } { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - \lambda \sum \delta _ { n e w } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - \lambda \sum \delta _ { n e w } } \\ { p _ { n e w } = \lambda \sum \delta _ { n e w } , p _ { o l d } = \lambda \sum \delta _ { o l d } } \end{array} \\ \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - p _ { n e w } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - p _ { n e w } \\ \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - \lambda \sum \delta _ { o l d } = \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - p _ { o l d } // 
+\frac { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - p _ { n e w } } { \operatorname { det } \left( X _ { \text {old} } ^ { T } X _ { \text {old} } \right) - p _ { \text {old} } } = \frac { \operatorname { det } \left( X _ { \text {old} } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - p _ { \text {new} } } { \operatorname { det } \left( X _ { \text {old} } ^ { T } X _ { \text {old} } \right) - p _ { \text {old} } }
+$$
+
+Therefore, we can define a new update criterion:
+
+$$
+\begin{array} { c } { \Delta _ { p } \left( x _ { i } , x _ { j } \right) = \frac { \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) * \left( 1 + \Delta \left( x _ { i } , x _ { j } \right) \right) - p _ { n e w } } { \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - p _ { o l d } } - 1 } \\ { \operatorname { det } \left( X _ { n e w } ^ { T } X _ { n e w } \right) - p _ { n e w } = \left( \operatorname { det } \left( X _ { o l d } ^ { T } X _ { o l d } \right) - p _ { o l d } \right) * \left( 1 + \Delta _ { p } \left( x _ { i } , x _ { j } \right) \right) } \end{array}
+$$
+
+This criterion allows us to figure out the row swap that maximizes our objective function, given that the slacks are penalized. It also allows us to terminate the algorithm as the improvement $$ \Delta _ { p } $$ converges to zero, i.e. the marginal improvement of another swap becomes trivial.
 
 ### Modified Fedorov Algorithm
 
