@@ -85,6 +85,8 @@ Expanding out all possibilities into the entire candidate set, this would be 3\*
 Practically speaking, the number of attributes is limited to no more than 25, each with at most 5 levels due to the complexity of the simulation, limited respondent pool, and limited number of experiments possible per respondent.  Thus, at most, the candidate set contains $$ 5 ^ { 25 } $$ (approx. $$ 3 \times 10 ^ { 17 } $$) possibilities – and will generally be significantly smaller as not all 25 attributes are used and most contain fewer than 5 levels.  However, the worst-case scenario requires approximately $$ 2 \times 10 ^ { 10 } $$ gigabytes to merely store the candidate set.  The combinatorics problem explains why stochastic search algorithms such as simulated annealing or genetic algorithms are frequently used instead of an exhaustive search against a complete candidate set.  
 
 
+
+
 ### Model Definition
 
 Our goal is to maximize the weighted d-optimality of the design matrix, penalized for missing distributions and impossible variable interactions, and subject to the distributions of each attribute’s levels and interactions, where each attribute’s level is represented by a binary variable.
@@ -140,6 +142,9 @@ $$\qquad$$ Binary constraints: $$ W , Y , Z \in \{ 0,1 \} $$
 
 $$\qquad$$ Interaction slacks: While not specified in the toy problem, it is entirely possible that we may have interactions specified in the design (i.e., men cannot be pregnant).  In these cases, the slacks are the count of the impossible interactions.  We will penalize these interaction slacks twice because they are more costly to the design than a missed distribution. 
 
+
+
+
 ### Constrained D-Optimality
 
 For our discrete-choice design, the information matrix of an *n*-point design is 
@@ -178,20 +183,233 @@ $$
 
 This criterion allows us to figure out the row swap that maximizes our objective function, given that the slacks are penalized. It also allows us to terminate the algorithm as the improvement $$ \Delta _ { p } $$ converges to zero, i.e. the marginal improvement of another swap becomes trivial.
 
+
+
+
 ### Modified Fedorov Algorithm
+
 We have implemented a modified Fedorov Algorithm (Labadi, 2015; Triefenback, 2008) that considers the slack of distribution constraints (step 4) when performing the iterative state search:
 1. Calculate the candidate set, the set of all theoretically possible combinations.  Because of the possibility of explosive growth with combinatorics, this will not always be feasible.
 2. Generate an initial n-point design (an arbitrary design with a nonsingular information matrix) that generally obeys distribution constraints
 3. Compute $$ M,  M  ^ { \top } $$, and the determinant of $$ M $$
-4. Perform an exhaustive search across the design matrix X and the entire candidate set, using the delta function and Δ_p(xi,xj) to identify the pair of points that maximally improve D-optimality, penalizing the slack from the distribution constraints. Perform the swap.
-If efficiency metric is sufficiently close to optimal (or improvement from variance estimator is sufficiently small), stop.  If the iteration limit is reached, stop.
-	Set i=i+1 and return to step 3
+4. Perform an exhaustive search across the design matrix $$ X $$ and the entire candidate set, using the delta function and $$ \Delta _ { p } \left( \mathbf { x } _ { i } \mathbf { x } _ { j } \right) $$ to identify the pair of points that maximally improve D-optimality, penalizing the slack from the distribution constraints. Perform the swap.
+5. If efficiency metric is sufficiently close to optimal (or improvement from variance estimator is sufficiently small), stop.  If the iteration limit is reached, stop. Set $$ i = i + 1 $$ and return to step 3
+
+<details><summary>Fedorov Code</summary>
+  <div markdown = "1">
+	  
+```
+#-- Objective functions -----------------------------------------------------------
+doptimality <- function(dm, design, lambda=0) {
+  # calculates doptimality of design (and optionally penalizes distribution constraints)
+  # params:
+  # dm: DesignMatrix object containing attribute & constraint information
+  # design: design matrix where columns are attributes and rows are patients
+  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # returns: d-efficiency metric
+  
+  # calculate slacks for the design
+  dm$X <- design
+  dm$update_slacks()
+
+  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
+  # objective <- det( t(design)%*%design ) / nrow(design)
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  # this double-penalizes islacks b/c we really don't want impossible interactions
+  return(objective - penalty)
+}
+
+#-- Helper functions -----------------------------------------------------------
+# d <- function(D, row) {
+#   # function to calculate variance estimator
+#   # params:
+#   # D: current design matrix
+#   # row: row to evaluate wrt. design
+#   estimator <- row %*% solve( t(D)%*%D ) %*% t(row)
+#   return(estimator)
+# }
+
+var_est <- function(D,i_row,j_row) {
+  # variance estimator for swapping rows
+  # params:
+  # D: current design matrix
+  # i_row: leaving row
+  # j_row: entering row
+  
+  # attempting protection from singular matrix inversions
+  X <- tryCatch( 
+    { solve( t(D)%*%D ) },
+    finally={ MASS::ginv( t(D)%*%D )  }
+  )    
+  est <- j_row %*% X %*% i_row
+  return(est)
+  # return(j %*% solve( t(as.matrix(D))%*%as.matrix(D) ) %*% t(as.matrix(i)))
+}
+
+penalty <- function(dm, X, lambda) {
+  # penatly calculator
+  # params:
+  # dm: DesignMatrix object with attributes and constraints
+  # X: design matrix
+  # lambda: penalty for slacks
+  # returns: penalty
+  
+  # calculate slacks for the current design
+  dm$update_slacks()
+  
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  return(penalty)
+}
+
+delta_var <- function(D, i, j, lambda) {
+  # variance estimator for swapping rows
+  # params:
+  # D: current design matrix
+  # i: leaving row
+  # j: entering row
+  # lambda: penalty for slacks
+  # returns: variance estimator
+  
+  est <- var_est(D,j,j) - ( var_est(D,j,j)*var_est(D,i,i)-var_est(D,i,j)^2 ) - var_est(D,i,i)
+  return(est)
+}
+
+update_obj <- function(D, i, j_row, lambda, det, dvar) {
+  # calculates the % increase in the objective function for the row swap
+  # params:
+  # D: current design matrix
+  # i: leaving row *index*
+  # j: entering row
+  # lambda: penalty for slacks
+  # det: determinant
+  # dvar: delta variance estimator
+  # returns: updated doptimality metric
+  
+  # calculate penalties
+  old_p <- penalty(dm, D, lambda)
+  i_row <- D[i,]
+  dm$del_row(i)
+  dm$add_row(j_row)
+  dm$update_slacks()
+  new_p <- penalty(dm, dm$X, lambda)
+  
+  # revert dm$X
+  dm$X <- D 
+  return( (det*(1+dvar)-new_p) / (det-old_p) - 1 )
+}
+
+#-- Fedorov --------------------------
+fedorov <- function(dm, candidate_set, n, lambda=0) {
+  # fedorov algorithm find d-optimal design
+  # params:
+    # dm: Design Matrix object
+    # candidate_set: matrix of all possible combinations of attributes
+    # n: number of rows
+    # lambda: weight for slack penalties
+  # returns: optimal design
+  
+  # set inital values of algorithm
+  iter <- 1
+  obj_delta_best <- .0001
+  det <- as.numeric(determinant(t(dm$X)%*%dm$X)$modulus)
+  
+  # iterate until the improvement in D-optimality is minimal or 100 iterations is reached
+  while ((obj_delta_best > 10e-6) && (iter < 100)) {
+
+    i_best <- NULL
+    j_best <- NULL
+    obj_delta_best <- 0
+    
+    for (i in 1:n) {                      # iterate through rows in design matrix
+      for (j in 1:nrow(candidate_set)) {  # iterate through rows in candidate set
+        
+        dvar <- NULL
+        obj_delta <- NULL    
+
+        # calculate the potential improvement in D-optimality by replacing the
+        # current row in the design with the current row in the candidate set
+        dvar <- delta_var(dm$X, dm$X[i,], candidate_set[j,])
+        # delta <- delta_var(dm$X, t(dm$X[i,]), as.matrix(candidate_set[j,]))
+        obj_delta <- update_obj(dm$X, i, candidate_set[j,], lambda, det, dvar)
+
+        # if that is greater than the best candidate so far, make it the new best pair
+        if (obj_delta > obj_delta_best) {
+          obj_delta_best <- obj_delta
+          dvar_best <- dvar
+          i_best <- i
+          j_best <- j
+          print(paste(paste("iteration", iter, sep=" "), obj_delta_best, dvar_best, sep=" | "))
+        } else {
+          next
+        }
+      } # end for j
+    } # end for i
+
+    ### updates
+    if (is.null(i_best)) {
+      # no better swaps found
+      break
+    } else {
+      # perform swap
+      dm$del_row(i_best)
+      dm$add_row(candidate_set[j_best,])
+      dm$update_slacks()
+      
+      # update the determinate following the swap
+      det <- det*(1+dvar_best)
+      
+      iter <- iter+1
+    }
+    
+  } # end while
+  
+  if (iter == 100) {
+    print("Algorithm stopped due to reaching iteration limit")
+  } else {
+    print(paste("Convergence achieved in ",iter," iterations"))
+  }
+  return(dm$X)
+} # end fedorov
+```
+  </div>
+</details>
 
 ### Parallelized
+We attempted to then parallelize the modified Fedorov Algorithm as it has ‘embarrassingly parallel’ tasks in the exhaustive search.  In step 4 above, it should be possible to calculate $$ \Delta _ { p } \left( \mathbf { x } _ { i } \mathbf { x } _ { j } \right) $$ in parallel.  Our R implementation fails, seemingly due to a bug in the doParallel or foreach libraries that prevent passing a reference class object to the parallel environment.  While the parallel infrastructure may require too much overhead to outperform the non-parallel version for the toy problem (especially given that we must store $$ \Delta _ { p } \left( \mathbf { x } _ { i } \mathbf { x } _ { j } \right) $$ for each pair and sort the final list), we believe that as the problem size grows, the effects of parallelizing would show significant runtime improvements.
+
+
+
 
 #### MFA Results
 
+Running the modified Fedorov Algorithm for our toy problem on a top-of-the-line computer requires approximately 25 seconds per 100 iterations.  With lambda > 0, It becomes evident that oscillation is present, and the toy problem stops due to reaching the iteration limit, not due to convergence.  Additionally, the d-optimality of the resulting design (35.3) actually makes the design worse compared to the initial, randomly-generated design (53.1). 
+
+
+![Picture5](/assets/Picture5.png)
+
+
+With lambda = 0, the algorithm converges in 10 iterations over 2 seconds and demonstrates a significant improvement in d-optimality (131.0) over the original random design (53.9).
+
+
+![Picture6](/assets/Picture6.png)
+
+
+Both storage and runtime requirements limit the utility of this algorithm.  For large problems, it is infeasible to store the entirety of the candidate set; even if storage were possible, exhaustively iterating across $$ 3 \times 10 ^ { 17 } $$ possibilities (as defined in our worst-case scenario) would require more time than any user is likely to be willing to spend.
+
+	
 ### Genetic Algorithm
+
+Given the infeasibilities associated with running a discrete, exhaustive search on large candidate sets, we have also implemented a genetic algorithm to perform a stochastic search (Wanida Limmun, 2012):
+
+1. Generate the initial herd of size *population* – a list of randomly generated designs
+2. Calculate the d-optimality of each.  Preserve some number of elites.
+3. Breed random pairs of the non-elite stock (i.e., generate 2 new designs with random 50% from each parent).
+4. Randomly mutate cells within the children.
+5. Recombine the herd and assess the fitness (d-optimality) of each.  Cull the poor performers, keeping only *population*.
+6. Identify the most fit of the new generation; compare fitness to best from prior generation.  If fitness increase is sufficiently large, increment the number of generations and go back to step 2.  Otherwise stop.  If the maximum number of generations is reached, stop.
+
+Steps 2, 3, 4, and 5 are all ‘embarrassingly parallel’, so it is possible to implement a parallelized genetic algorithm to allow faster traversal of the search space or larger populations and more generations.
+
 
 #### GA Results
 
