@@ -98,7 +98,7 @@ design$methods(
     if (length(row) != ncol(.self$X)) {
       # ensure row is appropriate length
       stop("Row is wrong dimension")
-    } else if ( all(row > dm$levels-1) ) {
+    } else if ( all(row > X$levels-1) ) {
       # ensure row[j] is valid value for its column[,j]
       stop("Row values exceed allowed levels")        
     } else {
