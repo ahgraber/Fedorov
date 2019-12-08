@@ -5,7 +5,7 @@ dm <- design(n=8)
 dm$add_attribute(name="age", levels=3, dist=c(25,50,25))
 dm$add_attribute(name="sex", levels=2, dist=c(50,50))
 dm$add_attribute(name="bmi", levels=3, dist=c(33,33,34))
-dm$generate()
+dm$generate_design()
 
 dm$values
 dm$dslacks

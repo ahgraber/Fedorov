@@ -47,7 +47,7 @@ design$methods(
     }  
   }, # end add_interaction
 
-  generate = function() {
+  generate_design = function() {
     # generates matrix based on distributions
     
     .self$X <- matrix()
@@ -58,15 +58,15 @@ design$methods(
       column <- c()                 # create empty column
       reps <- round(.self$dist[[j]]*.self$n)         # calculate number per level
       for (i in 1:.self$levels[[j]]) {         # fill column
-        x <- rep(i, reps[i])
-        column <- append(column, x)
+        fill <- rep(i, reps[i])
+        column <- append(column, fill)
       } # end for i
       
       # check column is appropriate length
       if (length(column) < .self$n) { 
         # if short, add most frequent level fill times for correct length
-        fill <- .self$n - length(column)
-        column <- append(column, rep(which.max(reps), fill))
+        remaining <- .self$n - length(column)
+        column <- append(column, rep(which.max(reps), remaining))
       } else { 
         # if long, drop most frequent level until correct length
         while(length(column) > .self$n){
@@ -98,7 +98,7 @@ design$methods(
     if (length(row) != ncol(.self$X)) {
       # ensure row is appropriate length
       stop("Row is wrong dimension")
-    } else if ( all(row > X$levels-1) ) {
+    } else if ( all(row > .self$levels-1) ) {
       # ensure row[j] is valid value for its column[,j]
       stop("Row values exceed allowed levels")        
     } else {
@@ -113,14 +113,14 @@ design$methods(
     }
   }, # end add_row
   
-  del_row = function(j) {
-    if (j <= 0) {
+  del_row = function(i) {
+    if (i <= 0) {
       stop("Row index is < 0")
-    } else if (j > nrow(.self$X)) {
+    } else if (i > nrow(.self$X)) {
       stop("Row index > number rows in design matrix")
     } else {
       # delete row
-      .self$X <- .self$X[-j,] 
+      .self$X <- .self$X[-i,] 
       # recalculate values
       .self$update_values()
       # # recalculate slacks
@@ -139,9 +139,10 @@ design$methods(
     for (i in 1:length(.self$names)) {
       vals <- c()
       for (j in 1:.self$levels[i]-1) {
+        # count the number of rows with the current level
         vals <- append(vals, length(which(.self$values[[i]]==j)))
       }
-      .self$dslacks[[i]] <- .self$dist[[i]]*.self$n - vals
+      .self$dslacks[[i]] <- .self$dist[[i]]/.self$n - vals
     }
     # .self$dslacks <- mapply(function(d,v) {(d*.self$n) - (as.numeric(table(v)))},
     #                         d=.self$dist, v=.self$values)
@@ -155,15 +156,17 @@ design$methods(
       for (i in 1:length(interacts)) {
         indx1 <- which(.self$names == .self$interacts[[i]][[1]])
         indx2 <- which(.self$names == .self$interacts[[i]][[2]])
+
+        testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
+        testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
+
         if (.self$interacts[[i]][[5]]) {
           # if A must == B, count all where !=
-          testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
-          testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
           .self$islacks <- .self$islacks + (sum(testA) - sum(testA & testB))
         } else {
           # if A must != B, count all where ==
-          testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
-          testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
+          # testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
+          # testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
           .self$islacks <- .self$islacks + (sum(testA & testB))
         }
       } # end for 

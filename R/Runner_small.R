@@ -27,11 +27,12 @@ dm$add_interaction("age","bmi",0,2,F)
 # view attributes of dm
 dm$names
 dm$values
-dm$slacks
+dm$islacks
+dm$dslacks
 dm$X
 
 # test optimality
-doptimality(dm$X)
+doptimality(dm, dm$X)
 
 
-X <- gen_alg(dm, pop=50, gens=1000)
+X <- gen_alg(dm, pop=50, gens=1000, test='doptimality')
