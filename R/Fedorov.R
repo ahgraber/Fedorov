@@ -57,10 +57,10 @@ var_est <- function(D,i_row,j_row) {
   # j_row: entering row
   
   # attempting protection from singular matrix inversions
-  X <- tryCatch( 
-    { solve( t(D)%*%D ) },
-    finally={ MASS::ginv( t(D)%*%D )  }
-  )    
+  X <- tryCatch(
+    expr = { solve( t(D)%*%D ) },
+    error = function(e) { return( MASS::ginv( t(D)%*%D ) ) }
+  )
   est <- j_row %*% X %*% i_row
   return(est)
   # return(j %*% solve( t(as.matrix(D))%*%as.matrix(D) ) %*% t(as.matrix(i)))

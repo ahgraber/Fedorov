@@ -168,7 +168,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
   ### create herd (list of (dval, matrix) tuples)
   herd <- list()
   herd <- foreach(p=1:pop, .export=c("objfun","dm","lambda")) %dopar% { # don't need .combine param b/c results returned in list by default
-    dm$generate()
+    dm$generate_design()
     return(list(objfun(dm, dm$X, lambda), dm$X))
   } # end foreach
   

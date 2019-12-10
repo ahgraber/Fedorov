@@ -155,7 +155,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
   ### create herd (list of (dval, matrix) tuples)
   herd <- list()
   for (p in 1:pop) {
-    dm$generate()
+    dm$generate_design()
     herd[[p]] <- list(objfun(dm, dm$X, lambda), dm$X)
   }
   herd <- sorter(herd, dir)
