@@ -5,7 +5,7 @@ source(paste(here,"FedorovGA.R",sep="/"))
 #source(paste(here,"FedorovGAparallel.R",sep="/")) 
 
 
-# how many patients?
+# how many cards?
 n <- 8
 
 # create DesignMatrix object
