@@ -1,7 +1,7 @@
 # create attribute object
 design <- setRefClass("DesignMatrix", 
   fields = list(n = "numeric", names = "character", levels = "numeric", dist = "list", 
-                values = "list", interacts = "list", X = "matrix", 
+                values = "list", interacts = "list", X = "matrix", L = "matrix",
                 dslacks = "list", islacks = "numeric")
 ) # end attributeClass class definition
 
@@ -51,7 +51,8 @@ design$methods(
     # generates matrix based on distributions
     
     .self$X <- matrix()
-    
+    .self$L <- matrix()
+
     # create column for each attribute
     for (j in 1:length(.self$names)) {
       # find approximately accurate distribution of values
@@ -92,6 +93,13 @@ design$methods(
     # save design
     .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
     
+    # save cholesky
+    A <- tryCatch(
+      expr = { solve( t(.self$X)%*%.self$X ) },
+      error = function(e) { return( MASS::ginv( t(.self$X)%*%.self$X ) ) }
+    )
+    .self$L <- try(chol(A))
+
   }, # end generate
   
   add_row = function(row){
