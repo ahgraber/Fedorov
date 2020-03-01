@@ -118,37 +118,37 @@ update_obj <- function(D, i, j_row, lambda, det, dvar) {
   return( (det*(1+dvar)-new_p) / (det-old_p) - 1 )
 }
 
-update_chol <- function(L, x) {
-  # updates the Cholesky with given row addition
-  n <- length(x)
-  for (k in 1:n) {
-    r <- sqrt(L[k, k]^2 + x[k]^2)
-    c <- r / L[k, k]
-    s <- x[k] / L[k, k]
-    L[k, k] <- r
-    if (k < n) {
-      L[(k+1):n, k] <- (L[(k+1):n, k] + s * x[(k+1):n]) / c;
-      x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
-    }
-  }
-  return(L)
-}
+# update_chol <- function(L, x) {
+#   # updates the Cholesky with given row addition
+#   n <- length(x)
+#   for (k in 1:n) {
+#     r <- sqrt(L[k, k]^2 + x[k]^2)
+#     c <- r / L[k, k]
+#     s <- x[k] / L[k, k]
+#     L[k, k] <- r
+#     if (k < n) {
+#       L[(k+1):n, k] <- (L[(k+1):n, k] + s * x[(k+1):n]) / c;
+#       x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
+#     }
+#   }
+#   return(L)
+# }
 
-downdate_chol <- function(L, x) {
-  # "downdates"" the Cholesky with given row removal
-  n <- length(x)
-  for (k in 1:n) {
-    r <- sqrt(L[k, k]^2 - x[k]^2)
-    c <- r / L[k, k]
-    s <- x[k] / L[k, k]
-    L[k, k] <- r
-    if (k < n) {
-      L[(k+1):n, k] <- (L[(k+1):n, k] - s * x[(k+1):n]) / c;
-      x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
-    }
-  }
-  return(L)
-}
+# downdate_chol <- function(L, x) {
+#   # "downdates"" the Cholesky with given row removal
+#   n <- length(x)
+#   for (k in 1:n) {
+#     r <- sqrt(L[k, k]^2 - x[k]^2)
+#     c <- r / L[k, k]
+#     s <- x[k] / L[k, k]
+#     L[k, k] <- r
+#     if (k < n) {
+#       L[(k+1):n, k] <- (L[(k+1):n, k] - s * x[(k+1):n]) / c;
+#       x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
+#     }
+#   }
+#   return(L)
+# }
 
 det_chol <- function(L) {
   # returns the determinant of the cholesky
