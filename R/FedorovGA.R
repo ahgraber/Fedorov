@@ -18,6 +18,26 @@ doptimality <- function(dm, design, lambda=0) {
   return(objective - penalty)
 }
 
+doptimality_ch <- function(dm, design, lambda=0) {
+  # calculates doptimality of design (and optionally penalizes distribution constraints)
+  # using Cholesky decomposition
+  # params:
+  # dm: DesignMatrix object containing attribute & constraint information
+  # design: design matrix where columns are attributes and rows are patients
+  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # returns: d-efficiency metric
+  
+  # calculate slacks for the design
+  dm$X <- design
+  dm$update_slacks()
+  
+  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
+  # objective <- det( t(design)%*%design ) / nrow(design)
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  # this double-penalizes islacks b/c we really don't want impossible interactions
+  return(objective - penalty)
+}
+
 sumfisherz <- function(dm, design, lambda=0) {
   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
   # minimization objective function
@@ -63,6 +83,7 @@ breed <- function(X, Y){
   
   return(list(A,B))
 } # end breed
+
 mutate <- function(dm, X, alpha) {
   # mutation function for genetic algorithm
   # params:
@@ -70,7 +91,7 @@ mutate <- function(dm, X, alpha) {
     # X: design matrix (chromosome to be mutated)
     # alpha: num 0-1 indicating likelihood for mutation (lower increases mutation)
   # returns: mutated matrix X
-  
+
   for (i in 1:nrow(X)){
     # test whether to mutate row
     if (runif(1,0,1) >= alpha) { 
@@ -86,6 +107,41 @@ mutate <- function(dm, X, alpha) {
   
   return(X)
 } # end mutate
+
+mutate_efficiently <- function(dm, X, alpha) {
+  # mutation function for genetic algorithm
+  # params:
+  # dm: Design Matrix object
+  # X: design matrix (chromosome to be mutated)
+  # alpha: num 0-1 indicating likelihood for mutation (lower increases mutation)
+  # returns: mutated matrix X
+  
+  row_test <- runif(nrow(X), 0, 1)
+  row_mask <- matrix(rep(row_test>=alpha, ncol(X)), 
+                     nrow(X), 
+                     ncol(X), 
+                     byrow=F)
+  
+  cell_test <- matrix(runif(length(X), 0, 1), 
+                      nrow(X), 
+                      ncol(X), 
+                      byrow=T)
+  cell_mask <- cell_test >= alpha
+  
+  mutation_mask <- row_mask & cell_mask
+
+
+  # generate possible mutation for every cell
+  bulk_mutations <- sapply(X=dm$levels, 
+                           FUN=function (x) {(sample(c(1:x-1), nrow(X), replace=T))} )
+
+  X[mutation_mask] <- bulk_mutations[mutation_mask]
+  
+  return(X)
+  # return(list(X, score)) # return updated matrix AND updated fitness??
+  
+} # end mutate_efficiently
+
 cull <- function(elite, stock, children, pop, dir) {
   # function to reduce population back down to pop
   # params:
@@ -93,6 +149,7 @@ cull <- function(elite, stock, children, pop, dir) {
     # stock: list of non-elite parents design matrices
     # children: list of new design matrices
     # pop: int, population size to achieve
+    # dir: direction to sort
   # returns: list (length pop) of best design matrices
   
   # combine stock and child lists
@@ -107,6 +164,7 @@ cull <- function(elite, stock, children, pop, dir) {
 
   return(sorter(herd, dir))
 } # end cull
+
 sorter <- function(herd, dir) {
   # function to sort the herd based on objective function
   # params:
@@ -194,6 +252,8 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
     } # end for i (breed)
     
     ### mutation
+    # v_mutate <- Vectorize(mutate, "X", SIMPLIFY=F)
+    # children <- v_mutate(dm, children, alpha)
     for (j in 1:length(children)) { 
       if (runif(1,0,1) >= alpha) {
         # if test passed, mutate child
