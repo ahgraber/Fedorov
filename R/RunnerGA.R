@@ -1,9 +1,9 @@
 here <- dirname(rstudioapi::getSourceEditorContext()$path)
 source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
-# source(paste(here,"FedorovGA.R",sep="/"))
-source(paste(here,"FedorovGAparallel.R",sep="/"))
+source(paste(here,"FedorovGA.R",sep="/"))
+# source(paste(here,"FedorovGAparallel.R",sep="/"))
 
-# how many patients?
+# how many cards?
 # n <- 8 # toy problem
 n <- 50
 
