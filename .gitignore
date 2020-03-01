@@ -1,15 +1,15 @@
-.DS_Store
-.vscode
+**.DS_Store
+**.vscode
 
 # History files
 **.Rhistory
 **.Rapp.history
 
 # Session Data files
-.RData
+**.RData
 
 # User-specific files
-.Ruserdata
+**.Ruserdata
 
 # Example code in package build process
 *-Ex.R
@@ -21,7 +21,7 @@
 /*.Rcheck/
 
 # RStudio files
-.Rproj.user/
+**.Rproj.user/
 
 # produced vignettes
 vignettes/*.html
@@ -39,4 +39,4 @@ vignettes/*.pdf
 *.knit.md
 
 # R Environment Variables
-.Renviron
+**.Renviron
