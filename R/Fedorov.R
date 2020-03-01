@@ -119,6 +119,7 @@ update_obj <- function(D, i, j_row, lambda, det, dvar) {
 }
 
 update_chol <- function(L, x) {
+  # updates the Cholesky with given row addition
   n <- length(x)
   for (k in 1:n) {
     r <- sqrt(L[k, k]^2 + x[k]^2)
@@ -134,6 +135,7 @@ update_chol <- function(L, x) {
 }
 
 downdate_chol <- function(L, x) {
+  # "downdates"" the Cholesky with given row removal
   n <- length(x)
   for (k in 1:n) {
     r <- sqrt(L[k, k]^2 - x[k]^2)
@@ -149,6 +151,7 @@ downdate_chol <- function(L, x) {
 }
 
 det_chol <- function(L) {
+  # returns the determinant of the cholesky
   return(prod(diag(L))^2)
 }
 

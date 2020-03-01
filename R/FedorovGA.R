@@ -18,26 +18,6 @@ doptimality <- function(dm, design, lambda=0) {
   return(objective - penalty)
 }
 
-doptimality_ch <- function(dm, design, lambda=0) {
-  # calculates doptimality of design (and optionally penalizes distribution constraints)
-  # using Cholesky decomposition
-  # params:
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # returns: d-efficiency metric
-  
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-  
-  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-  # objective <- det( t(design)%*%design ) / nrow(design)
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  # this double-penalizes islacks b/c we really don't want impossible interactions
-  return(objective - penalty)
-}
-
 sumfisherz <- function(dm, design, lambda=0) {
   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
   # minimization objective function
@@ -129,7 +109,6 @@ mutate_efficiently <- function(dm, X, alpha) {
   cell_mask <- cell_test >= alpha
   
   mutation_mask <- row_mask & cell_mask
-
 
   # generate possible mutation for every cell
   bulk_mutations <- sapply(X=dm$levels, 

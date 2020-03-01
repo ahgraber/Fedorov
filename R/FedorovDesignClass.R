@@ -114,6 +114,7 @@ design$methods(
       .self$X <- rbind(.self$X, row)
       row.names(.self$X) <- NULL
       # recalculate values
+      .self$update_chol(row)
       .self$update_values()
       # # recalculate slacks
       # .self$update_dslacks()
@@ -130,6 +131,7 @@ design$methods(
       # delete row
       .self$X <- .self$X[-i,] 
       # recalculate values
+      .self$downdate_chol(self$X[i,])
       .self$update_values()
       # # recalculate slacks
       # .self$update_dslacks()
@@ -138,9 +140,47 @@ design$methods(
   }, # end del_row
   
   update_values = function() {
+    # reset .self$values from matrix X
     .self$values <- lapply(seq_len(ncol(.self$X)), function(i) {.self$X[,i]})
   }, # end update_values
   
+  update_chol = function(row) {
+    # updates the Cholesky with given row addition
+    n <- length(row)
+    for (k in 1:n) {
+      r <- sqrt(.self$L[k, k]^2 + row[k]^2)
+      c <- r / .self$L[k, k]
+      s <- row[k] / .self$L[k, k]
+      .self$L[k, k] <- r
+      if (k < n) {
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c;
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k];
+      }
+    }
+    # return(.self$L)
+  }
+
+  downdate_chol = function(row) {
+    # "downdates"" the Cholesky with given row removal
+    n <- length(row)
+    for (k in 1:n) {
+      r <- sqrt(.self$L[k, k]^2 - row[k]^2)
+      c <- r / .self$L[k, k]
+      s <- row[k] /.self$ L[k, k]
+      .self$L[k, k] <- r
+      if (k < n) {
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c;
+        row[(k+1):n] <- c * x[(k+1):n] - s * .self$L[(k+1):n, k];
+      }
+    }
+    # return(.self$L)
+  }
+
+  # det_chol = function() {
+  #   # returns the determinant of the cholesky
+  #   return(prod(diag(.self$L))^2)
+  # }
+
   update_dslacks = function() {
     # updates all slacks from each attribute's distribution constraints
     .self$dslacks <- list()
