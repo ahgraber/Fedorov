@@ -94,11 +94,11 @@ design$methods(
     .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
     
     # save cholesky
-    A <- tryCatch(
-      expr = { solve( t(.self$X)%*%.self$X ) },
-      error = function(e) { return( MASS::ginv( t(.self$X)%*%.self$X ) ) }
-    )
-    .self$L <- try(chol(A))
+    A <- tryCatch(
+      expr = { solve( t(.self$X)%*%.self$X ) },
+      error = function(e) { return( MASS::ginv( t(.self$X)%*%.self$X ) ) }
+    )
+    .self$L <- try(t(chol(A)))
 
   }, # end generate
   
@@ -131,7 +131,7 @@ design$methods(
       # delete row
       .self$X <- .self$X[-i,] 
       # recalculate values
-      .self$downdate_chol(self$X[i,])
+      .self$downdate_chol(.self$X[i,])
       .self$update_values()
       # # recalculate slacks
       # .self$update_dslacks()
@@ -153,13 +153,13 @@ design$methods(
       s <- row[k] / .self$L[k, k]
       .self$L[k, k] <- r
       if (k < n) {
-        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c;
-        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k];
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
     # return(.self$L)
-  }
-
+  },
+  
   downdate_chol = function(row) {
     # "downdates"" the Cholesky with given row removal
     n <- length(row)
@@ -169,12 +169,12 @@ design$methods(
       s <- row[k] /.self$ L[k, k]
       .self$L[k, k] <- r
       if (k < n) {
-        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c;
-        row[(k+1):n] <- c * x[(k+1):n] - s * .self$L[(k+1):n, k];
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
+        row[(k+1):n] <- c * x[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
     # return(.self$L)
-  }
+  },
 
   # det_chol = function() {
   #   # returns the determinant of the cholesky

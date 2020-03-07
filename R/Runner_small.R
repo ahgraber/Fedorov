@@ -1,6 +1,6 @@
 here <- dirname(rstudioapi::getSourceEditorContext()$path)
 source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
-source(paste(here,"Fedorov.R",sep="/")) 
+source(paste(here,"Fedorov_cholesky.R",sep="/")) 
 source(paste(here,"FedorovGA.R",sep="/")) 
 #source(paste(here,"FedorovGAparallel.R",sep="/")) 
 
@@ -48,7 +48,7 @@ gaX
 
 ## -- FEDOROV --------------------------------------------
 dm$X <- oldX
-doptimality(dm, dm$X, lambda=lmda)
+doptimality(dm, lambda=lmda)
 
 ### generate candidate set 
 system.time(
@@ -69,4 +69,4 @@ system.time(
   fX <- fedorov(dm, candidate_set, n, lambda=lmda)
 )
 fX
-doptimality(dm, fX, lambda=lmda)
+doptimality(dm, lambda=lmda)
