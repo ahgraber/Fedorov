@@ -94,10 +94,7 @@ design$methods(
     .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
     
     # save cholesky
-    A <- tryCatch(
-      expr = { solve( t(.self$X)%*%.self$X ) },
-      error = function(e) { return( MASS::ginv( t(.self$X)%*%.self$X ) ) }
-    )
+    A <- t(.self$X)%*%.self$X
     .self$L <- try(t(chol(A)))
 
   }, # end generate
@@ -170,7 +167,7 @@ design$methods(
       .self$L[k, k] <- r
       if (k < n) {
         .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
-        row[(k+1):n] <- c * x[(k+1):n] - s * .self$L[(k+1):n, k]
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
     # return(.self$L)
