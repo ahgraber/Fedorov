@@ -231,7 +231,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
     } # end for i (breed)
     
     ### mutation
-    # v_mutate <- Vectorize(mutate, "X", SIMPLIFY=F)
+    # v_mutate <- Vectorize(mutate_efficiently, "X", SIMPLIFY=F)
     # children <- v_mutate(dm, children, alpha)
     for (j in 1:length(children)) { 
       if (runif(1,0,1) >= alpha) {

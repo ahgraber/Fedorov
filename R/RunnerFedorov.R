@@ -3,7 +3,7 @@ source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
 source(paste(here,"Fedorov.R",sep="/"))
 # source(paste(here,"Fedorovparallel.R",sep="/"))
 
-# how many patients?
+# how many cards?
 n <- 8 # toy problem
 # n <- 50
 
