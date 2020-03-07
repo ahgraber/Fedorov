@@ -113,12 +113,13 @@ design$methods(
       #add row
       .self$X <- rbind(.self$X, row)
       row.names(.self$X) <- NULL
+      
       # recalculate values
       .self$update_chol(row)
       .self$update_values()
+      
       # # recalculate slacks
-      # .self$update_dslacks()
-      # .self$update_islacks()
+      # .self$update_slacks()
     }
   }, # end add_row
   
@@ -128,14 +129,17 @@ design$methods(
     } else if (i > nrow(.self$X)) {
       stop("Row index > number rows in design matrix")
     } else {
+      row <- .self$X[i,]
+      
       # delete row
       .self$X <- .self$X[-i,] 
+     
       # recalculate values
-      .self$downdate_chol(self$X[i,])
+      .self$downdate_chol(row)
       .self$update_values()
+      
       # # recalculate slacks
-      # .self$update_dslacks()
-      # .self$update_islacks()
+      # .self$update_slacks()
     }
   }, # end del_row
   
@@ -158,7 +162,7 @@ design$methods(
       }
     }
     # return(.self$L)
-  }
+  }, # end update_chol
 
   downdate_chol = function(row) {
     # "downdates"" the Cholesky with given row removal
@@ -170,16 +174,16 @@ design$methods(
       .self$L[k, k] <- r
       if (k < n) {
         .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c;
-        row[(k+1):n] <- c * x[(k+1):n] - s * .self$L[(k+1):n, k];
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k];
       }
     }
     # return(.self$L)
-  }
+  }, # end downdate_chol
 
   # det_chol = function() {
   #   # returns the determinant of the cholesky
   #   return(prod(diag(.self$L))^2)
-  # }
+  # }, # end det_chol
 
   update_dslacks = function() {
     # updates all slacks from each attribute's distribution constraints
@@ -227,3 +231,47 @@ design$methods(
     .self$update_islacks()
   }
 ) # end methods
+
+#-- Objective functions -----------------------------------------------------------
+doptimality <- function(dm, lambda=0) {
+  # calculates doptimality of DesignMatrix object 
+  # (and optionally penalizes distribution constraints)
+  # params:
+  # dm: DesignMatrix object containing attribute & constraint information
+  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # returns: d-efficiency metric
+  
+  # calculate slacks for the design
+  dm$update_slacks()
+
+  objective <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
+  # objective <- det( t(design)%*%design ) / nrow(design)
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  # this double-penalizes islacks b/c we really don't want impossible interactions
+  return(objective - penalty)
+}
+
+objective <- function(dm) {}
+
+objective_chol <- function(dm) {}
+
+penalty <- function(dm, lambda=0) {}
+
+sumfisherz <- function(dm, lambda=0) {
+  # calculates the sum of the fisher z score of the absolute values of the correlation matrix
+  # minimization objective function
+  # params
+  # dm: DesignMatrix object containing attribute & constraint information
+  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # design: design matrix where columns are attributes and rows are patients
+  # returns correlation score
+  
+  # calculate slacks for the design
+  dm$update_slacks()
+
+  r <- abs(cor(dm$X))
+  z <- .5*(log(1+r)/(1-r))
+  objective <- sum(z[is.finite(z)])
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  return(objective + penalty)
+}

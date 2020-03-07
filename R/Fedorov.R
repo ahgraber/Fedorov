@@ -1,43 +1,44 @@
-#-- Objective functions -----------------------------------------------------------
-doptimality <- function(dm, design, lambda=0) {
-  # calculates doptimality of design (and optionally penalizes distribution constraints)
-  # params:
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # returns: d-efficiency metric
+# NOTE: use obj funs from DesignClass.R to avoid duplication errors
+# #-- Objective functions -----------------------------------------------------------
+# doptimality <- function(dm, design, lambda=0) {
+#   # calculates doptimality of design (and optionally penalizes distribution constraints)
+#   # params:
+#   # dm: DesignMatrix object containing attribute & constraint information
+#   # design: design matrix where columns are attributes and rows are patients
+#   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+#   # returns: d-efficiency metric
   
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-
-  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-  # objective <- det( t(design)%*%design ) / nrow(design)
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  # this double-penalizes islacks b/c we really don't want impossible interactions
-  return(objective - penalty)
-}
-
-sumfisherz <- function(dm, design, lambda=0) {
-  # calculates the sum of the fisher z score of the absolute values of the correlation matrix
-  # minimization objective function
-  # params
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # design: design matrix where columns are attributes and rows are patients
-  # returns correlation score
+#   # calculate slacks for the design
+#   dm$X <- design
+#   dm$update_slacks()
   
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
+#   objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
+#   # objective <- det( t(design)%*%design ) / nrow(design)
+#   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+#   # this double-penalizes islacks b/c we really don't want impossible interactions
+#   return(objective - penalty)
+# }
 
-  r <- abs(cor(design))
-  z <- .5*(log(1+r)/(1-r))
-  objective <- sum(z[is.finite(z)])
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  return(objective + penalty)
-}
+# sumfisherz <- function(dm, design, lambda=0) {
+#   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
+#   # minimization objective function
+#   # params
+#   # dm: DesignMatrix object containing attribute & constraint information
+#   # design: design matrix where columns are attributes and rows are patients
+#   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+#   # design: design matrix where columns are attributes and rows are patients
+#   # returns correlation score
+  
+#   # calculate slacks for the design
+#   dm$X <- design
+#   dm$update_slacks()
+  
+#   r <- abs(cor(design))
+#   z <- .5*(log(1+r)/(1-r))
+#   objective <- sum(z[is.finite(z)])
+#   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+#   return(objective + penalty)
+# }
 
 #-- Helper functions -----------------------------------------------------------
 # d <- function(D, row) {

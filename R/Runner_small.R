@@ -4,7 +4,7 @@ source(paste(here,"Fedorov.R",sep="/"))
 source(paste(here,"FedorovGA.R",sep="/")) 
 #source(paste(here,"FedorovGAparallel.R",sep="/")) 
 
-
+# -- Initialize DesignMatrix -----------------------------
 # how many cards?
 n <- 8
 
@@ -33,40 +33,59 @@ dm$islacks
 dm$dslacks
 dm$X
 
-# preserve design matrix for testing
-oldX <- dm$X
+# duplicate design matrix for testing
+dm_ga <- dm$copy()
+dm_fed <- dm$copy()
+dm_chol <- dm$copy()
 
 # test optimality
-doptimality(dm, dm$X, lambda=lmda)
-
-
-## -- GENETIC --------------------------------------------
-system.time(
-  gaX <- gen_alg(dm, pop=50, gens=1000, test='doptimality', lambda=lmda)
-)
-gaX
+doptimality(dm, lambda=lmda)
 
 ## -- FEDOROV --------------------------------------------
-dm$X <- oldX
-doptimality(dm, dm$X, lambda=lmda)
-
 ### generate candidate set 
 system.time(
   candidate_set <- AlgDesign::gen.factorial(dm$levels, factors="all")
   # full 16-attribute candidate_set generation takes ~3 minutes on fast computer
-)
-# bkup <- candidate_set
 
-# convert to numeric matrix
-indx <- sapply(candidate_set, is.factor)
-candidate_set[,indx] <- lapply(candidate_set[,indx], function(x) as.numeric(as.character(x)))
-candidate_set <- as.matrix(candidate_set)
-# zero base
-candidate_set <- candidate_set-1
+  # convert to numeric matrix
+  indx <- sapply(candidate_set, is.factor)
+  candidate_set[,indx] <- lapply(candidate_set[,indx], function(x) as.numeric(as.character(x)))
+  candidate_set <- as.matrix(candidate_set)
+  # zero base
+  candidate_set <- candidate_set-1
 
-### test optimality
-system.time(
-  fX <- fedorov(dm, candidate_set, n, lambda=lmda)
+  ### test optimality
+  fX <- fedorov(dm_fed, candidate_set, n, lambda=lmda)
 )
 fX
-doptimality(dm, fX, lambda=lmda)
+doptimality(dm_fed, lambda=lmda)
+
+
+## -- FEDOROV + CHOLESKY -----------------------------------
+### generate candidate set 
+system.time(
+  candidate_set <- AlgDesign::gen.factorial(dm$levels, factors="all")
+  # full 16-attribute candidate_set generation takes ~3 minutes on fast computer
+
+  # convert to numeric matrix
+  indx <- sapply(candidate_set, is.factor)
+  candidate_set[,indx] <- lapply(candidate_set[,indx], function(x) as.numeric(as.character(x)))
+  candidate_set <- as.matrix(candidate_set)
+  # zero base
+  candidate_set <- candidate_set-1
+
+  ### test optimality
+  fcX <- fedorov(dm_chol, candidate_set, n, lambda=lmda)
+)
+fcX
+doptimality(dm_chol, lambda=lmda)
+
+
+## -- GENETIC --------------------------------------------
+system.time(
+  ga_DM <- gen_alg(dm_ga, pop=50, gens=1000, test='doptimality', lambda=lmda)
+)
+ga_DM
+ga_DM$X
+doptimality(dm_ga, lambda=lmda)
+
