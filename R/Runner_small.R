@@ -1,6 +1,6 @@
 here <- dirname(rstudioapi::getSourceEditorContext()$path)
 source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
-source(paste(here,"Fedorov.R",sep="/")) 
+source(paste(here,"Fedorov_cholesky.R",sep="/")) 
 source(paste(here,"FedorovGA.R",sep="/")) 
 #source(paste(here,"FedorovGAparallel.R",sep="/")) 
 

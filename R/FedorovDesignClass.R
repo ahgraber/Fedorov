@@ -98,7 +98,7 @@ design$methods(
       expr = { solve( t(.self$X)%*%.self$X ) },
       error = function(e) { return( MASS::ginv( t(.self$X)%*%.self$X ) ) }
     )
-    .self$L <- try(chol(A))
+    .self$L <- try(t(chol(A)))
 
   }, # end generate
   
@@ -134,7 +134,7 @@ design$methods(
       # delete row
       .self$X <- .self$X[-i,] 
      
-      # recalculate values
+      # recalculate values\
       .self$downdate_chol(row)
       .self$update_values()
       
@@ -157,8 +157,8 @@ design$methods(
       s <- row[k] / .self$L[k, k]
       .self$L[k, k] <- r
       if (k < n) {
-        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c;
-        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k];
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
     # return(.self$L)
@@ -173,8 +173,8 @@ design$methods(
       s <- row[k] /.self$ L[k, k]
       .self$L[k, k] <- r
       if (k < n) {
-        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c;
-        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k];
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
+        row[(k+1):n] <- c * x[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
     # return(.self$L)
