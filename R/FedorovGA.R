@@ -19,7 +19,7 @@
 #   return(objective - penalty)
 # }
 
-# sumfisherz <- function(dm, design, lambda=0) {
+# sumfisherz <- function(dm, lambda=0) {
 #   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
 #   # minimization objective function
 #   # params

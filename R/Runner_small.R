@@ -55,9 +55,10 @@ system.time(
   candidate_set <- candidate_set-1
 
   ### test optimality
-  fX <- fedorov(dm_fed, candidate_set, n, lambda=lmda)
+  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda)
 )
-fX
+f_DM
+f_DM$X
 doptimality(dm_fed, lambda=lmda)
 
 
@@ -75,13 +76,14 @@ system.time(
   candidate_set <- candidate_set-1
 
   ### test optimality
-  fcX <- fedorov(dm_chol, candidate_set, n, lambda=lmda)
+  fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda)
 )
-fcX
+fc_DM
+fc_DM$X
 doptimality(dm_chol, lambda=lmda)
 
 
-## -- GENETIC --------------------------------------------
+## -- GENETIC + CHOLESKY -----------------------------------
 system.time(
   ga_DM <- gen_alg(dm_ga, pop=50, gens=1000, test='doptimality', lambda=lmda)
 )

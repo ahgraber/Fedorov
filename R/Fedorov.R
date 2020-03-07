@@ -1,45 +1,3 @@
-# NOTE: use obj funs from DesignClass.R to avoid duplication errors
-# #-- Objective functions -----------------------------------------------------------
-# doptimality <- function(dm, design, lambda=0) {
-#   # calculates doptimality of design (and optionally penalizes distribution constraints)
-#   # params:
-#   # dm: DesignMatrix object containing attribute & constraint information
-#   # design: design matrix where columns are attributes and rows are patients
-#   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-#   # returns: d-efficiency metric
-  
-#   # calculate slacks for the design
-#   dm$X <- design
-#   dm$update_slacks()
-  
-#   objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-#   # objective <- det( t(design)%*%design ) / nrow(design)
-#   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-#   # this double-penalizes islacks b/c we really don't want impossible interactions
-#   return(objective - penalty)
-# }
-
-# sumfisherz <- function(dm, design, lambda=0) {
-#   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
-#   # minimization objective function
-#   # params
-#   # dm: DesignMatrix object containing attribute & constraint information
-#   # design: design matrix where columns are attributes and rows are patients
-#   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-#   # design: design matrix where columns are attributes and rows are patients
-#   # returns correlation score
-  
-#   # calculate slacks for the design
-#   dm$X <- design
-#   dm$update_slacks()
-  
-#   r <- abs(cor(design))
-#   z <- .5*(log(1+r)/(1-r))
-#   objective <- sum(z[is.finite(z)])
-#   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-#   return(objective + penalty)
-# }
-
 #-- Helper functions -----------------------------------------------------------
 # d <- function(D, row) {
 #   # function to calculate variance estimator
@@ -65,22 +23,7 @@ var_est <- function(D,i_row,j_row) {
   est <- j_row %*% X %*% i_row
   return(est)
   # return(j %*% solve( t(as.matrix(D))%*%as.matrix(D) ) %*% t(as.matrix(i)))
-}
-
-penalty <- function(dm, X, lambda) {
-  # penatly calculator
-  # params:
-  # dm: DesignMatrix object with attributes and constraints
-  # X: design matrix
-  # lambda: penalty for slacks
-  # returns: penalty
-  
-  # calculate slacks for the current design
-  dm$update_slacks()
-  
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  return(penalty)
-}
+} # end var_est
 
 delta_var <- function(D, i, j, lambda) {
   # variance estimator for swapping rows
@@ -93,7 +36,7 @@ delta_var <- function(D, i, j, lambda) {
   
   est <- var_est(D,j,j) - ( var_est(D,j,j)*var_est(D,i,i)-var_est(D,i,j)^2 ) - var_est(D,i,i)
   return(est)
-}
+} # end delta_var
 
 update_obj <- function(D, i, j_row, lambda, det, dvar) {
   # calculates the % increase in the objective function for the row swap
@@ -117,44 +60,7 @@ update_obj <- function(D, i, j_row, lambda, det, dvar) {
   # revert dm$X
   dm$X <- D 
   return( (det*(1+dvar)-new_p) / (det-old_p) - 1 )
-}
-
-# update_chol <- function(L, x) {
-#   # updates the Cholesky with given row addition
-#   n <- length(x)
-#   for (k in 1:n) {
-#     r <- sqrt(L[k, k]^2 + x[k]^2)
-#     c <- r / L[k, k]
-#     s <- x[k] / L[k, k]
-#     L[k, k] <- r
-#     if (k < n) {
-#       L[(k+1):n, k] <- (L[(k+1):n, k] + s * x[(k+1):n]) / c;
-#       x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
-#     }
-#   }
-#   return(L)
-# }
-
-# downdate_chol <- function(L, x) {
-#   # "downdates"" the Cholesky with given row removal
-#   n <- length(x)
-#   for (k in 1:n) {
-#     r <- sqrt(L[k, k]^2 - x[k]^2)
-#     c <- r / L[k, k]
-#     s <- x[k] / L[k, k]
-#     L[k, k] <- r
-#     if (k < n) {
-#       L[(k+1):n, k] <- (L[(k+1):n, k] - s * x[(k+1):n]) / c;
-#       x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
-#     }
-#   }
-#   return(L)
-# }
-
-det_chol <- function(L) {
-  # returns the determinant of the cholesky
-  return(prod(diag(L))^2)
-}
+} # end update_obj
 
 #-- Fedorov --------------------------
 fedorov <- function(dm, candidate_set, n, lambda=0) {

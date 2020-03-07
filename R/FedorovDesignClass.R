@@ -233,29 +233,52 @@ design$methods(
 ) # end methods
 
 #-- Objective functions -----------------------------------------------------------
-doptimality <- function(dm, lambda=0) {
+penalty <- function(dm, lambda) {
+  # penatly calculator
+  # params:
+  # dm: DesignMatrix object with attributes and constraints
+  # X: design matrix
+  # lambda: penalty for slacks
+  # returns: penalty
+  
+  # calculate slacks for the current design
+  dm$update_slacks()
+  
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  return(penalty)
+}
+
+doptimality <- function(dm, lambda=0, how='chol') {
   # calculates doptimality of DesignMatrix object 
   # (and optionally penalizes distribution constraints)
   # params:
   # dm: DesignMatrix object containing attribute & constraint information
   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # how: using standard determinant 'det' or cholesky update matrix 'chol' for calculation
   # returns: d-efficiency metric
-  
-  # calculate slacks for the design
-  dm$update_slacks()
 
-  objective <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
-  # objective <- det( t(design)%*%design ) / nrow(design)
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  if (how == 'det') {
+    obj <- objective(dm)
+  } elseif (how == 'chol') {
+    obj <- objective_chol(dm)
+  }
+
+  pen <- penalty(dm, lambda)
   # this double-penalizes islacks b/c we really don't want impossible interactions
-  return(objective - penalty)
+
+  return(objective - pen)
 }
 
-objective <- function(dm) {}
+objective <- function(dm) {
+  obj <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
+  return(obj)
+}
 
-objective_chol <- function(dm) {}
-
-penalty <- function(dm, lambda=0) {}
+objective_chol <- function(dm) {
+  obj <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
+  # objective <- det( t(design)%*%design ) / nrow(design)
+  return(obj)
+}
 
 sumfisherz <- function(dm, lambda=0) {
   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
@@ -271,7 +294,7 @@ sumfisherz <- function(dm, lambda=0) {
 
   r <- abs(cor(dm$X))
   z <- .5*(log(1+r)/(1-r))
-  objective <- sum(z[is.finite(z)])
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  return(objective + penalty)
+  obj <- sum(z[is.finite(z)])
+  pen <- penalty(dm, lambda)
+  return(obj + pen)
 }
