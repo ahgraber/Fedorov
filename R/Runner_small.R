@@ -1,7 +1,7 @@
 here <- dirname(rstudioapi::getSourceEditorContext()$path)
 source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
 source(paste(here,"Fedorov_cholesky.R",sep="/")) 
-source(paste(here,"FedorovGA.R",sep="/")) 
+#source(paste(here,"FedorovGA.R",sep="/")) 
 #source(paste(here,"FedorovGAparallel.R",sep="/")) 
 
 # -- Initialize DesignMatrix -----------------------------
@@ -40,6 +40,7 @@ dm_chol <- dm$copy()
 
 # test optimality
 doptimality(dm, lambda=lmda)
+
 
 ## -- FEDOROV --------------------------------------------
 ### generate candidate set 

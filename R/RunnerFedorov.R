@@ -1,11 +1,11 @@
 here <- dirname(rstudioapi::getSourceEditorContext()$path)
 source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
-source(paste(here,"Fedorov.R",sep="/"))
+source(paste(here,"Fedorov_cholesky.R",sep="/"))
 # source(paste(here,"Fedorovparallel.R",sep="/"))
 
 # how many cards?
 n <- 8 # toy problem
-# n <- 50
+n <- 50
 
 # how to penalize slacks?
 lambda = 1
@@ -22,18 +22,18 @@ dm$add_attribute(name="race", levels=4, dist=c(40,20,20,20))
 dm$add_attribute(name="dia", levels=2, dist=c(50,50))
 dm$add_attribute(name="strk", levels=2, dist=c(75,25))
 dm$add_attribute(name="angn", levels=3, dist=c(50,25,25))
-dm$add_attribute(name="ldl", levels=3, dist=c(25,50,25))
-dm$add_attribute(name="bp", levels=3, dist=c(25,50,25))
+#dm$add_attribute(name="ldl", levels=3, dist=c(25,50,25))
+#dm$add_attribute(name="bp", levels=3, dist=c(25,50,25))
 dm$add_attribute(name="a1c", levels=4, dist=c(25,25,25,25))
-dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
-dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
-dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
-dm$add_attribute(name="ptx", levels=4, dist=c(25,25,25,25))
-dm$add_attribute(name="hist", levels=3, dist=c(50,25,25))
-dm$add_attribute(name="smk", levels=3, dist=c(50,25,25))
+#dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
+#dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
+#dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
+#dm$add_attribute(name="ptx", levels=4, dist=c(25,25,25,25))
+#dm$add_attribute(name="hist", levels=3, dist=c(50,25,25))
+#dm$add_attribute(name="smk", levels=3, dist=c(50,25,25))
 
 # generate
-dm$generate()
+dm$generate_design()
 
 # add interaction
 dm$add_interaction(n1="dia", n2="a1c", l1=0, l2=3, eq=F) # nondiabetics can't have high a1c
@@ -63,7 +63,7 @@ candidate_set <- candidate_set-1
 #  
 
 # initial optimality
-doptimality(dm, dm$X, lambda=lambda)
+doptimality(dm, lambda=lambda)
 
 ### test optimality
 system.time(
