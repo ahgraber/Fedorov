@@ -1,7 +1,8 @@
 here <- dirname(rstudioapi::getSourceEditorContext()$path)
 source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
+source(paste(here,"Fedorov.R",sep="/")) 
 source(paste(here,"Fedorov_cholesky.R",sep="/")) 
-#source(paste(here,"FedorovGA.R",sep="/")) 
+source(paste(here,"FedorovGA.R",sep="/")) 
 #source(paste(here,"FedorovGAparallel.R",sep="/")) 
 
 # -- Initialize DesignMatrix -----------------------------
@@ -34,19 +35,19 @@ dm$dslacks
 dm$X
 
 # duplicate design matrix for testing
-dm_ga <- dm$copy()
-dm_fed <- dm$copy()
-dm_chol <- dm$copy()
+dm_fed <- dm$copy(shallow=T)
+dm_chol <- dm$copy(shallow=T)
+dm_ga <- dm$copy(shallow=T)
 
-# test optimality
-doptimality(dm, lambda=lmda)
-
+# test initial optimality
+doptimality(dm, lambda=lmda, how='det')
+doptimality(dm, lambda=lmda, how='chol')
+sumfisherz(dm, lambda=lmda)
 
 ## -- FEDOROV --------------------------------------------
 ### generate candidate set 
-system.time(
+system.time({
   candidate_set <- AlgDesign::gen.factorial(dm$levels, factors="all")
-  # full 16-attribute candidate_set generation takes ~3 minutes on fast computer
 
   # convert to numeric matrix
   indx <- sapply(candidate_set, is.factor)
@@ -56,16 +57,17 @@ system.time(
   candidate_set <- candidate_set-1
 
   ### test optimality
-  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda)
-)
-f_DM
+  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda, iter=20)
+})
+# f_DM
 f_DM$X
-doptimality(dm_fed, lambda=lmda)
-
+doptimality(f_DM, lambda=lmda, how='det')
+doptimality(f_DM, lambda=lmda, how='chol')
+sumfisherz(f_DM, lambda=lmda)
 
 ## -- FEDOROV + CHOLESKY -----------------------------------
 ### generate candidate set 
-system.time(
+system.time({
   candidate_set <- AlgDesign::gen.factorial(dm$levels, factors="all")
   # full 16-attribute candidate_set generation takes ~3 minutes on fast computer
 
@@ -77,18 +79,20 @@ system.time(
   candidate_set <- candidate_set-1
 
   ### test optimality
-  fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda)
-)
-fc_DM
+  fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda, iter=20)
+})
+# fc_DM
 fc_DM$X
-doptimality(dm_chol, lambda=lmda)
-
+doptimality(fc_DM, lambda=lmda, how='det')
+doptimality(fc_DM, lambda=lmda, how='chol')
+sumfisherz(fc_DM, lambda=lmda)
 
 ## -- GENETIC + CHOLESKY -----------------------------------
-system.time(
-  ga_DM <- gen_alg(dm_ga, pop=50, gens=1000, test='doptimality', lambda=lmda)
-)
-ga_DM
+system.time({
+  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda)
+})
+# ga_DM
 ga_DM$X
-doptimality(dm_ga, lambda=lmda)
-
+doptimality(ga_DM, lambda=lmda, how='det')
+doptimality(ga_DM, lambda=lmda, how='chol')
+sumfisherz(ga_DM, lambda=lmda)

@@ -1,45 +1,3 @@
-# NOTE: use obj funs from DesignClass.R to avoid duplication errors
-# #-- Objective functions -----------------------------------------------------------
-# doptimality <- function(dm, design, lambda=0) {
-#   # calculates doptimality of design (and optionally penalizes distribution constraints)
-#   # params:
-#   # dm: DesignMatrix object containing attribute & constraint information
-#   # design: design matrix where columns are attributes and rows are patients
-#   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-#   # returns: d-efficiency metric
-  
-#   # calculate slacks for the design
-#   dm$X <- design
-#   dm$update_slacks()
-  
-#   objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-#   # objective <- det( t(design)%*%design ) / nrow(design)
-#   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-#   # this double-penalizes islacks b/c we really don't want impossible interactions
-#   return(objective - penalty)
-# }
-
-# sumfisherz <- function(dm, lambda=0) {
-#   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
-#   # minimization objective function
-#   # params
-#   # dm: DesignMatrix object containing attribute & constraint information
-#   # design: design matrix where columns are attributes and rows are patients
-#   # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-#   # design: design matrix where columns are attributes and rows are patients
-#   # returns correlation score
-  
-#   # calculate slacks for the design
-#   dm$X <- design
-#   dm$update_slacks()
-  
-#   r <- abs(cor(design))
-#   z <- .5*(log(1+r)/(1-r))
-#   objective <- sum(z[is.finite(z)])
-#   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-#   return(objective + penalty)
-# }
-
 #-- supporting functions ---------------------------------------
 breed <- function(p1, p2){
   # breeding function for genetic algorithm; approx 50/50 mix of parents
@@ -116,30 +74,6 @@ breed <- function(p1, p2){
 
   return(list(c1, c2))
 } # end breed
-
-# mutate_old <- function(dm, X, alpha) {
-#   # mutation function for genetic algorithm
-#   # params:
-#     # dm: Design Matrix object
-#     # X: design matrix (chromosome to be mutated)
-#     # alpha: num 0-1 indicating likelihood for mutation (lower increases mutation)
-#   # returns: mutated matrix X
-
-#   for (i in 1:nrow(X)){
-#     # test whether to mutate row
-#     if (runif(1,0,1) >= alpha) { 
-#       for (j in 1:ncol(X)) {
-#         # test whether to mutate cell
-#         if (runif(1,0,1) >= alpha) {
-#           # pick new value from permissible levels of attribute column
-#           X[i,j] <- sample(c(1:dm$levels[j]-1),1)
-#         } # end if j
-#       } # end for j
-#     } # end if i
-#   } # end for i
-  
-#   return(X)
-# } # end mutate
 
 mutate <- function(dm, alpha) {
   # mutation function for genetic algorithm
@@ -229,7 +163,7 @@ sorter <- function(herd, dir) {
 } # end sorter
 
 # genetic algorithm
-gen_alg <- function(dm, pop, gens, test, lambda=0) {
+gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
   # genetic algorithm to find d-optimal design
   # params:
     # dm: Design Matrix object
@@ -254,11 +188,12 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
   alpha <- 0.4 # probability threshold; lower increases variation/mutation
 
   ### create herd (list of (dval, DesignMatrix object) tuples)
+  print('Creating Generation 0')
   herd <- list()
   for (p in 1:pop) {
-    new <- dm$copy()
+    new <- dm$copy(shallow=TRUE)
     new$generate_design()
-    herd[[p]] <- list(objfun(new, lambda), new)
+    herd[[p]] <- list(objfun(new, lambda, how), new)
   }
   herd <- sorter(herd, dir)
   top <- herd[[1]]
@@ -275,7 +210,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
   while ((g < gens) && (converge < log2(gens))) {
     # stop if reach maximum generations OR 
     # if difference between top designs remains small for some number of generations
-          
+
     if ((pop %% 2) != 0) { nelite <- nelite-1} # adjust for odd population
     elite <- head(herd, nelite)
     stock <- tail(herd, -nelite)
@@ -302,13 +237,13 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
     for (j in 1:length(children)) { 
       if (runif(1,0,1) >= alpha) {
         # if test passed, mutate child
-        children[[j]] <- mutate(dm, children[[j]], alpha)
+        children[[j]] <- mutate(children[[j]], alpha)
       }
     } # end for j (mutate)
 
     ### assess fitness
     for (k in 1:length(children)) {
-      children[[k]] <- list(objfun(children[[k]], lambda), children[[k]])
+      children[[k]] <- list(objfun(children[[k]], lambda, how), children[[k]])
     }
     
     ### cull
@@ -340,9 +275,12 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
       }
     }
 
-    top <- herd[[1]]
+    # top <- herd[[1]]
+    top <- herd[[1]][[1]]
+    
+    print(paste(paste("Generation", g, sep=" "), top, sep=" | "))
   } # end while
   
   print(paste("Convergence achieved in ",g," iterations"))
-  return(herd[[1]])
+  return(herd[[1]][[2]])
 } # end gen_alg

@@ -114,9 +114,8 @@ design$methods(
       # recalculate values
       .self$update_chol(row)
       .self$update_values()
-      
-      # # recalculate slacks
-      # .self$update_slacks()
+      .self$update_slacks()
+
     }
   }, # end add_row
   
@@ -134,9 +133,8 @@ design$methods(
       # recalculate values\
       .self$downdate_chol(row)
       .self$update_values()
-      
-      # # recalculate slacks
-      # .self$update_slacks()
+      .self$update_slacks()
+
     }
   }, # end del_row
   
@@ -235,13 +233,13 @@ penalty <- function(dm, lambda) {
   # params:
   # dm: DesignMatrix object with attributes and constraints
   # X: design matrix
-  # lambda: penalty for slacks
+  # lambda: penalty for slacks 
   # returns: penalty
   
   # calculate slacks for the current design
   dm$update_slacks()
   
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + 2*lambda*(sum(abs(unlist(dm$islacks)))) )
   return(penalty)
 }
 
@@ -256,24 +254,32 @@ doptimality <- function(dm, lambda=0, how='chol') {
 
   if (how == 'det') {
     obj <- objective(dm)
-  } elseif (how == 'chol') {
+  } else if (how == 'chol') {
     obj <- objective_chol(dm)
+  } else {
+    stop('Error: "how" not in c("det","chol")')
   }
 
   pen <- penalty(dm, lambda)
   # this double-penalizes islacks b/c we really don't want impossible interactions
 
-  return(objective - pen)
+  return(obj - pen)
 }
 
 objective <- function(dm) {
   obj <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
+  # obj <- det( t(dm$X)%*%dm$X ) / nrow(dm$X)
   return(obj)
 }
 
+det_chol <- function(L) {
+  # returns the determinant of the cholesky
+  return( prod(diag(L))^2 )
+}
+
 objective_chol <- function(dm) {
-  obj <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-  # objective <- det( t(design)%*%design ) / nrow(design)
+  obj <- (100 * det_chol(dm$L)^(1/ncol(dm$X))) / nrow(dm$X)
+  # obj <- (100 * det_chol(dm$L) )
   return(obj)
 }
 
