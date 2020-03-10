@@ -1,15 +1,19 @@
 # create attribute object
-design <- setRefClass("DesignMatrix", 
+DesignMatrix <- setRefClass("DesignMatrix", 
   fields = list(n = "numeric", names = "character", levels = "numeric", dist = "list", 
                 values = "list", interacts = "list", X = "matrix", L = "matrix",
-                dslacks = "list", islacks = "numeric")
+                dslacks = "list", islacks = "numeric", cholesky = "logical")
 ) # end attributeClass class definition
 
-design$methods(
+DesignMatrix$methods(
   # initialize = function(n) {
   #   .self$n <- n
   #   .self$islacks <- list()
   # }, # end initialize
+  
+  set_cholesky = function(cholesky) {
+    .self$cholesky = cholesky  
+  }, 
   
   add_attribute = function(name, levels, dist) {
     # adds an attribute & params to design
@@ -51,8 +55,9 @@ design$methods(
     # generates matrix based on distributions
     
     .self$X <- matrix()
-    .self$L <- matrix()
 
+    if (.self$cholesky) { .self$L <- matrix() }
+    
     # create column for each attribute
     for (j in 1:length(.self$names)) {
       # find approximately accurate distribution of values
@@ -93,9 +98,12 @@ design$methods(
     # save design
     .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
     
-    # save cholesky
-    A <- t(.self$X)%*%.self$X
-    .self$L <- try(t(chol(A)))
+    if (.self$cholesky) {
+      # save cholesky
+      A <- t(.self$X)%*%.self$X
+      .self$L <- try(t(chol(A)))      
+    }
+
 
   }, # end generate
   
@@ -112,7 +120,7 @@ design$methods(
       row.names(.self$X) <- NULL
       
       # recalculate values
-      .self$update_chol(row)
+      if (.self$cholesky) { .self$update_chol(row) }
       .self$update_values()
       .self$update_slacks()
 
@@ -130,8 +138,8 @@ design$methods(
       # delete row
       .self$X <- .self$X[-i,] 
      
-      # recalculate values\
-      .self$downdate_chol(row)
+      # recalculate values
+      if (.self$cholesky) { .self$downdate_chol(row) }
       .self$update_values()
       .self$update_slacks()
 

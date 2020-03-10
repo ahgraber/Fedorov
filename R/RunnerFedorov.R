@@ -7,10 +7,10 @@ source(paste(here,"FedorovGA.R",sep="/"))
 
 # -- Initialize DesignMatrix -----------------------------
 # how many cards?
-n <- 50
+n <- 40
 
 ### create DesignMatrix object
-dm <- design(n=n)
+dm <- DesignMatrix(n=n, cholesky=F)
 
 # create attributes
 dm$add_attribute(name="age", levels=3, dist=c(25,50,25))
@@ -18,17 +18,20 @@ dm$add_attribute(name="gender", levels=2, dist=c(50,50))
 dm$add_attribute(name="bmi", levels=3, dist=c(20,40,40))
 dm$add_attribute(name="race", levels=4, dist=c(40,20,20,20))
 dm$add_attribute(name="dia", levels=2, dist=c(50,50))
-dm$add_attribute(name="strk", levels=2, dist=c(75,25))
 dm$add_attribute(name="angn", levels=3, dist=c(50,25,25))
-#dm$add_attribute(name="ldl", levels=3, dist=c(25,50,25))
-#dm$add_attribute(name="bp", levels=3, dist=c(25,50,25))
+dm$add_attribute(name="ldl", levels=3, dist=c(25,50,25))
+dm$add_attribute(name="bp", levels=3, dist=c(25,50,25))
 dm$add_attribute(name="a1c", levels=4, dist=c(25,25,25,25))
-#dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
-#dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
-#dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
-#dm$add_attribute(name="ptx", levels=4, dist=c(25,25,25,25))
-#dm$add_attribute(name="hist", levels=3, dist=c(50,25,25))
-#dm$add_attribute(name="smk", levels=3, dist=c(50,25,25))
+dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
+dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
+dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
+# dm$add_attribute(name="strk", levels=2, dist=c(75,25))
+# dm$add_attribute(name="ptx", levels=4, dist=c(25,25,25,25))
+# dm$add_attribute(name="hist", levels=3, dist=c(50,25,25))
+# dm$add_attribute(name="smk", levels=3, dist=c(50,25,25))
+
+# enable/disable cholesky functionality
+dm$set_cholesky(cholesky=F)
 
 # generate
 dm$generate_design()
@@ -56,7 +59,7 @@ doptimality(dm, lambda=lmda, how='det')
 doptimality(dm, lambda=lmda, how='chol')
 sumfisherz(dm, lambda=lmda)
 
-## -- FEDOROV --------------------------------------------
+## -- CANDIDATE SET -------------------------------------
 ### generate candidate set 
 library(AlgDesign)
 system.time(
@@ -77,9 +80,9 @@ candidate_set <- candidate_set-1
 # rm(indx)
 #  
 
-### FEDOROV
-system.time(
-  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda)
+## -- FEDOROV --------------------------------------------
+f_time <- system.time(
+  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda) # iter=20
 )
 # f_DM
 f_DM$X
@@ -87,7 +90,7 @@ doptimality(f_DM, lambda=lmda, how='det')
 doptimality(f_DM, lambda=lmda, how='chol')
 sumfisherz(f_DM, lambda=lmda)
 
-## -- FEDOROV parallel --------------------------------------------
+## -- FEDOROV parallel ------------------------------------
 # system.time(
 #   fpar_DM <- fedorovpar(dm_fed, candidate_set, n, lambda=lambda)
 # )
@@ -99,8 +102,8 @@ sumfisherz(f_DM, lambda=lmda)
 
 ## -- FEDOROV + CHOLESKY -----------------------------------
 ### FEDOROV + CHOLESKY
-system.time(
-  fc_DM <- fedorov(dm_chol, candidate_set, n, lambda=lmda)
+fc_time <- system.time(
+  fc_DM <- fedorov(dm_chol, candidate_set, n, lambda=lmda) # iter=20
 )
 # fc_DM
 fc_DM$X
