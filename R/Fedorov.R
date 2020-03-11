@@ -1,159 +1,58 @@
-#-- Objective functions -----------------------------------------------------------
-doptimality <- function(dm, design, lambda=0) {
-  # calculates doptimality of design (and optionally penalizes distribution constraints)
-  # params:
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # returns: d-efficiency metric
-  
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-
-  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-  # objective <- det( t(design)%*%design ) / nrow(design)
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  # this double-penalizes islacks b/c we really don't want impossible interactions
-  return(objective - penalty)
-}
-
-sumfisherz <- function(dm, design, lambda=0) {
-  # calculates the sum of the fisher z score of the absolute values of the correlation matrix
-  # minimization objective function
-  # params
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # design: design matrix where columns are attributes and rows are patients
-  # returns correlation score
-  
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-
-  r <- abs(cor(design))
-  z <- .5*(log(1+r)/(1-r))
-  objective <- sum(z[is.finite(z)])
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  return(objective + penalty)
-}
-
 #-- Helper functions -----------------------------------------------------------
-# d <- function(D, row) {
-#   # function to calculate variance estimator
-#   # params:
-#   # D: current design matrix
-#   # row: row to evaluate wrt. design
-#   estimator <- row %*% solve( t(D)%*%D ) %*% t(row)
-#   return(estimator)
-# }
-
-var_est <- function(D,i_row,j_row) {
+var_est <- function(D, i, j) {
   # variance estimator for swapping rows
   # params:
   # D: current design matrix
-  # i_row: leaving row
-  # j_row: entering row
+  # i: leaving row
+  # j: entering row
   
   # attempting protection from singular matrix inversions
   X <- tryCatch(
     expr = { solve( t(D)%*%D ) },
     error = function(e) { return( MASS::ginv( t(D)%*%D ) ) }
   )
-  est <- j_row %*% X %*% i_row
+  est <- j %*% X %*% i
+
   return(est)
   # return(j %*% solve( t(as.matrix(D))%*%as.matrix(D) ) %*% t(as.matrix(i)))
-}
-
-penalty <- function(dm, X, lambda) {
-  # penatly calculator
-  # params:
-  # dm: DesignMatrix object with attributes and constraints
-  # X: design matrix
-  # lambda: penalty for slacks
-  # returns: penalty
-  
-  # calculate slacks for the current design
-  dm$update_slacks()
-  
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  return(penalty)
-}
+} # end var_est
 
 delta_var <- function(D, i, j, lambda) {
-  # variance estimator for swapping rows
+  # calculates the difference in variance for swapping rows
   # params:
   # D: current design matrix
   # i: leaving row
   # j: entering row
   # lambda: penalty for slacks
   # returns: variance estimator
-  
-  est <- var_est(D,j,j) - ( var_est(D,j,j)*var_est(D,i,i)-var_est(D,i,j)^2 ) - var_est(D,i,i)
+  Dii <- var_est(D,i,i)
+  Djj <- var_est(D,j,j)
+  Dij <- var_est(D,i,j)
+
+  est <- Djj - ( (Djj * Dii) - Dij^2 ) - Dii
+
   return(est)
-}
+} # end delta_var
 
-update_obj <- function(D, i, j_row, lambda, det, dvar) {
-  # calculates the % increase in the objective function for the row swap
+update_obj <- function(dm_old, dm_new, lambda, det, dvar) {
+  # calculates the % change in the objective function for the row swap
   # params:
-  # D: current design matrix
-  # i: leaving row *index*
-  # j: entering row
+  # dm_old: DesignMatrix object with before swap
+  # dm_new: DesignMatrix object with rows swapped
   # lambda: penalty for slacks
-  # det: determinant
-  # dvar: delta variance estimator
+  # det: determinant of dm_old
+  # dvar: delta variance estimator to update det
   # returns: updated doptimality metric
-  
+
   # calculate penalties
-  old_p <- penalty(dm, D, lambda)
-  i_row <- D[i,]
-  dm$del_row(i)
-  dm$add_row(j_row)
-  dm$update_slacks()
-  new_p <- penalty(dm, dm$X, lambda)
-  
-  # revert dm$X
-  dm$X <- D 
+  old_p <- penalty(dm, lambda)
+  new_p <- penalty(dm_new, lambda)
+
   return( (det*(1+dvar)-new_p) / (det-old_p) - 1 )
-}
-
-update_chol <- function(L, x) {
-  n <- length(x)
-  for (k in 1:n) {
-    r <- sqrt(L[k, k]^2 + x[k]^2)
-    c <- r / L[k, k]
-    s <- x[k] / L[k, k]
-    L[k, k] <- r
-    if (k < n) {
-      L[(k+1):n, k] <- (L[(k+1):n, k] + s * x[(k+1):n]) / c;
-      x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
-    }
-  }
-  return(L)
-}
-
-downdate_chol <- function(L, x) {
-  n <- length(x)
-  for (k in 1:n) {
-    r <- sqrt(L[k, k]^2 - x[k]^2)
-    c <- r / L[k, k]
-    s <- x[k] / L[k, k]
-    L[k, k] <- r
-    if (k < n) {
-      L[(k+1):n, k] <- (L[(k+1):n, k] - s * x[(k+1):n]) / c;
-      x[(k+1):n] <- c * x[(k+1):n] - s * L[(k+1):n, k];
-    }
-  }
-  return(L)
-}
-
-det_chol <- function(L) {
-  return(prod(diag(L))^2)
-}
+} # end update_obj
 
 #-- Fedorov --------------------------
-fedorov <- function(dm, candidate_set, n, lambda=0) {
+fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
   # fedorov algorithm find d-optimal design
   # params:
     # dm: Design Matrix object
@@ -163,66 +62,84 @@ fedorov <- function(dm, candidate_set, n, lambda=0) {
   # returns: optimal design
   
   # set inital values of algorithm
-  iter <- 1
+  n_iter <- 1
   obj_delta_best <- .0001
+  obj <- doptimality(dm, lambda, how='det')
+
+  # preserve deterimant for use in estimator
   det <- as.numeric(determinant(t(dm$X)%*%dm$X)$modulus)
   
   # iterate until the improvement in D-optimality is minimal or 100 iterations is reached
-  while ((obj_delta_best > 10e-6) && (iter < 100)) {
+  while ((obj_delta_best > 10e-6) && (n_iter < iter)) {
 
-    i_best <- NULL
-    j_best <- NULL
+    dm_best <- NULL
     obj_delta_best <- 0
     
     for (i in 1:n) {                      # iterate through rows in design matrix
       for (j in 1:nrow(candidate_set)) {  # iterate through rows in candidate set
-        
-        dvar <- NULL
-        obj_delta <- NULL    
 
-        # calculate the potential improvement in D-optimality by replacing the
-        # current row in the design with the current row in the candidate set
+        # create test case
+        dm_test <- dm$copy(shallow=TRUE)
+        dm_test$add_row(candidate_set[j,])
+        dm_test$del_row(i)
+
+        # calculate the potential % improvement in D-optimality from the row swap
         dvar <- delta_var(dm$X, dm$X[i,], candidate_set[j,])
-        # delta <- delta_var(dm$X, t(dm$X[i,]), as.matrix(candidate_set[j,]))
-        obj_delta <- update_obj(dm$X, i, candidate_set[j,], lambda, det, dvar)
+        obj_delta <- update_obj(dm, dm_test, lambda, det, dvar)
 
-        # if that is greater than the best candidate so far, make it the new best pair
+        # calculate the objective function using variance estimators
+        pnlt <- penalty(dm_test, lambda)
+        # det_est <- det*(1+dvar)
+        det_est <- det*(1+dvar) + pnlt
+        obj_test <- (100 * det_est^(1/ncol(dm_test$X)))/ nrow(dm_test$X) - pnlt
+        # print(paste('Debug: actual objfun: ', doptimality(dm_test, lambda, how='chol')))
+        # print(paste('Debug: estimated objfun: ', obj_test))
+
+        # if swapped design is better than the best candidate so far, make it the new best design
         if (obj_delta > obj_delta_best) {
-          obj_delta_best <- obj_delta
+          dm_best <- dm_test$copy(shallow=TRUE)
           dvar_best <- dvar
-          i_best <- i
-          j_best <- j
-          print(paste(paste("iteration", iter, sep=" "), obj_delta_best, dvar_best, sep=" | "))
+          obj_delta_best <- obj_delta
+          obj_best <- obj_test
+
+          # print(paste(paste("Iteration", n_iter, sep=" "), dvar_best, obj_delta_best, obj_best, sep=" | "))
+          print(paste(paste("Iteration", n_iter, sep=" "), obj_delta_best, obj_best, sep=" | "))
         } else {
           next
         }
+        try(rm(dm_test), silent=T)
+        try(rm(dvar), silent=T)
+        try(rm(det_est), silent=T)
+        try(rm(obj_test), silent=T)
+        try(rm(obj_delta), silent=T)
       } # end for j
     } # end for i
 
     ### updates
-    if (is.null(i_best)) {
+    if (is.null(dm_best)) {
       # no better swaps found
       break
     } else {
-      # perform swap
-      dm$del_row(i_best)
-      dm$add_row(candidate_set[j_best,])
-      dm$update_slacks()
+      # retain swap
+      dm <- dm_best$copy(shallow=TRUE)
+
+      # update the determinant following the swap
+      # det <- det*(1+dvar_best)
+      det <- det*(1+dvar_best) + penalty(dm_best, lambda)
+      obj <- obj_best
       
-      # update the determinate following the swap
-      det <- det*(1+dvar_best)
-      
-      iter <- iter+1
+      n_iter <- n_iter+1
     }
     
   } # end while
   
-  if (iter == 100) {
+  if (n_iter == iter) {
     print("Algorithm stopped due to reaching iteration limit")
   } else {
-    print(paste("Convergence achieved in ",iter," iterations"))
+    print(paste("Convergence achieved in ",n_iter," iterations"))
   }
-  return(dm$X)
+  print(paste("DEBUG: internal objfun - ",obj))
+  return(dm)
 } # end fedorov
 
 # asdf

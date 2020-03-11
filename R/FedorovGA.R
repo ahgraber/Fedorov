@@ -1,121 +1,88 @@
-#-- Objective functions -----------------------------------------------------------
-doptimality <- function(dm, design, lambda=0) {
-  # calculates doptimality of design (and optionally penalizes distribution constraints)
-  # params:
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # returns: d-efficiency metric
-  
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-  
-  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-  # objective <- det( t(design)%*%design ) / nrow(design)
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  # this double-penalizes islacks b/c we really don't want impossible interactions
-  return(objective - penalty)
-}
-
-doptimality_ch <- function(dm, design, lambda=0) {
-  # calculates doptimality of design (and optionally penalizes distribution constraints)
-  # using Cholesky decomposition
-  # params:
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # returns: d-efficiency metric
-  
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-  
-  objective <- (100 * det( t(design)%*%design )^(1/ncol(design)))/ nrow(design)
-  # objective <- det( t(design)%*%design ) / nrow(design)
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  # this double-penalizes islacks b/c we really don't want impossible interactions
-  return(objective - penalty)
-}
-
-sumfisherz <- function(dm, design, lambda=0) {
-  # calculates the sum of the fisher z score of the absolute values of the correlation matrix
-  # minimization objective function
-  # params
-  # dm: DesignMatrix object containing attribute & constraint information
-  # design: design matrix where columns are attributes and rows are patients
-  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
-  # design: design matrix where columns are attributes and rows are patients
-  # returns correlation score
-  
-  # calculate slacks for the design
-  dm$X <- design
-  dm$update_slacks()
-  
-  r <- abs(cor(design))
-  z <- .5*(log(1+r)/(1-r))
-  objective <- sum(z[is.finite(z)])
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*(sum(abs(unlist(dm$islacks)))) )
-  return(objective + penalty)
-}
-
 #-- supporting functions ---------------------------------------
-breed <- function(X, Y){
+breed <- function(p1, p2){
   # breeding function for genetic algorithm; approx 50/50 mix of parents
   # params:
-    # X: design matrix (parent 1)
-    # Y: design matrix (parent 2)
+    # p1: DesignClass object (parent 1)
+    # p2: DesignClass object (parent 2)
   # returns:
-    # list(A,B) where A,B are child matrices of X,Y
+    # list(c1,c2) where c1,c2 are child DesignClass objects of p1,p2
   
-  if (nrow(X) != nrow(Y)) {stop('Parents do not have equivalent rows')}
-  if (ncol(X) != ncol(Y)) {stop('Parents do not have equivalent columns')}
+  if (nrow(p1$X) != nrow(p2$X)) {stop('Parents do not have equivalent rows')}
+  if (ncol(p1$X) != ncol(p2$X)) {stop('Parents do not have equivalent columns')}
   
-  probsA <- runif(nrow(X),0,1)
-  ax <- X[probsA > .5,]  # chromosomes from parent X
-  ay <- Y[probsA <= .5,] # chromosomes from parent Y
-  A <- rbind(ax,ay)
+  # DEPRECATED: use cholesky functionality instead
+  # probsA <- runif(nrow(p1$X),0,1)
+  # ax <- p1$X[probsA > 0.5,]  # chromosomes from parent X
+  # ay <- p2$X[probsA <= 0.5,] # chromosomes from parent Y
+  # A <- rbind(ax,ay)
 
-  probsB <- runif(nrow(X),0,1)
-  bx <- X[probsB > .5,]  # chromosomes from parent X
-  by <- Y[probsB <= .5,] # chromosomes from parent Y
-  B <- rbind(bx,by)
-  
-  return(list(A,B))
+  # probsB <- runif(nrow(X),0,1)
+  # bx <- p2$X[probsB > 0.5,]  # chromosomes from parent X
+  # by <- p2$Y[probsB <= 0.5,] # chromosomes from parent Y
+  # # cholesky update
+  # B <- rbind(bx,by)
+
+  # cholesky update:
+  # find which is longer, copy that parent
+  # then add new rows from other parent 
+  # and delete rows not inherited from first
+  probs_c1 <- runif(nrow(p1$X),0,1)
+  p1_rowidx <- which(probs_c1 > 0.5)
+  p2_rowidx <- which(probs_c1 <= 0.5)
+  if (length(p1_rowidx) > length(p2_rowidx)) {
+    # if p1 inheritence > p2 inheritence, copy p1
+    c1 <- p1$copy() 
+    for (i in p2_rowidx) {
+      # add rows inherited from p2
+      c1$add_row(p2$X[i,])
+      # remove rows NOT inherited from p1
+      c1$del_row(i)
+    }
+  } else {
+    # if p1 inheritence < p2 inheritence, copy p2
+    c1 <- p2$copy()
+    for (i in p1_rowidx) {
+      # add rows inherited from p2
+      c1$add_row(p1$X[i,])
+      # remove rows NOT inherited from p1
+      c1$del_row(i)
+    }
+  }
+
+  probs_c2 <- runif(nrow(p2$X),0,1)
+  p1_rowidx <- which(probs_c2 > 0.5)
+  p2_rowidx <- which(probs_c2 <= 0.5)
+  if (length(p1_rowidx) > length(p2_rowidx)) {
+    # if p1 inheritence > p2 inheritence, copy p1
+    c2 <- p1$copy() 
+    for (i in p2_rowidx) {
+      # add rows inherited from p2
+      c2$add_row(p2$X[i,])
+      # remove rows NOT inherited from p1
+      c2$del_row(i)
+    }
+  } else {
+    # if p1 inheritence < p2 inheritence, copy p2
+    c2 <- p2$copy()
+    for (i in p1_rowidx) {
+      # add rows inherited from p2
+      c2$add_row(p1$X[i,])
+      # remove rows NOT inherited from p1
+      c2$del_row(i)
+    }
+  }
+
+  return(list(c1, c2))
 } # end breed
 
-mutate <- function(dm, X, alpha) {
-  # mutation function for genetic algorithm
-  # params:
-    # dm: Design Matrix object
-    # X: design matrix (chromosome to be mutated)
-    # alpha: num 0-1 indicating likelihood for mutation (lower increases mutation)
-  # returns: mutated matrix X
-
-  for (i in 1:nrow(X)){
-    # test whether to mutate row
-    if (runif(1,0,1) >= alpha) { 
-      for (j in 1:ncol(X)) {
-        # test whether to mutate cell
-        if (runif(1,0,1) >= alpha) {
-          # pick new value from permissible levels of attribute column
-          X[i,j] <- sample(c(1:dm$levels[j]-1),1)
-        } # end if j
-      } # end for j
-    } # end if i
-  } # end for i
-  
-  return(X)
-} # end mutate
-
-mutate_efficiently <- function(dm, X, alpha) {
+mutate <- function(dm, alpha) {
   # mutation function for genetic algorithm
   # params:
   # dm: Design Matrix object
-  # X: design matrix (chromosome to be mutated)
   # alpha: num 0-1 indicating likelihood for mutation (lower increases mutation)
   # returns: mutated matrix X
   
+  X <- dm$X
   row_test <- runif(nrow(X), 0, 1)
   row_mask <- matrix(rep(row_test>=alpha, ncol(X)), 
                      nrow(X), 
@@ -130,17 +97,27 @@ mutate_efficiently <- function(dm, X, alpha) {
   
   mutation_mask <- row_mask & cell_mask
 
-
   # generate possible mutation for every cell
   bulk_mutations <- sapply(X=dm$levels, 
-                           FUN=function (x) {(sample(c(1:x-1), nrow(X), replace=T))} )
+                           FUN=function (y) {(sample(c(1:y-1), nrow(X), replace=T))} 
+                          )
 
+  # apply mutations to edit matrix
   X[mutation_mask] <- bulk_mutations[mutation_mask]
-  
-  return(X)
+
+  # update DesignMatrix
+  row_idx <- which(row_mask[,1])
+  for (i in row_idx) {
+    # add mutation as new row
+    dm$add_row(X[i,])
+    # remove unmuated row
+    dm$del_row(i)
+  }
+
+  return(dm)
   # return(list(X, score)) # return updated matrix AND updated fitness??
   
-} # end mutate_efficiently
+} # end mutate
 
 cull <- function(elite, stock, children, pop, dir) {
   # function to reduce population back down to pop
@@ -153,7 +130,7 @@ cull <- function(elite, stock, children, pop, dir) {
   # returns: list (length pop) of best design matrices
   
   # combine stock and child lists
-  fill <- append(stock,children) 
+  fill <- append(stock, children) 
   fill <- sorter(fill, dir)
   
   # find number of herd to fill after elites are kept
@@ -186,7 +163,7 @@ sorter <- function(herd, dir) {
 } # end sorter
 
 # genetic algorithm
-gen_alg <- function(dm, pop, gens, test, lambda=0) {
+gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
   # genetic algorithm to find d-optimal design
   # params:
     # dm: Design Matrix object
@@ -210,11 +187,13 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
 
   alpha <- 0.4 # probability threshold; lower increases variation/mutation
 
-  ### create herd (list of (dval, matrix) tuples)
+  ### create herd (list of (dval, DesignMatrix object) tuples)
+  print('Creating Generation 0')
   herd <- list()
   for (p in 1:pop) {
-    dm$generate_design()
-    herd[[p]] <- list(objfun(dm, dm$X, lambda), dm$X)
+    new <- dm$copy(shallow=TRUE)
+    new$generate_design()
+    herd[[p]] <- list(objfun(new, lambda, how), new)
   }
   herd <- sorter(herd, dir)
   top <- herd[[1]]
@@ -231,7 +210,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
   while ((g < gens) && (converge < log2(gens))) {
     # stop if reach maximum generations OR 
     # if difference between top designs remains small for some number of generations
-          
+
     if ((pop %% 2) != 0) { nelite <- nelite-1} # adjust for odd population
     elite <- head(herd, nelite)
     stock <- tail(herd, -nelite)
@@ -244,7 +223,10 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
       if (x[i] != y[i]) { # no self-replication
         if (runif(1,0,1) >= alpha){
           # if test passed, breed & save children
-          kids <- breed(stock[[ x[i] ]][[2]],stock[[ y[i] ]][[2]]) 
+          kids <- breed(
+            stock[[ x[i] ]][[2]], 
+            stock[[ y[i] ]][[2]]
+          ) 
           children[[length(children)+1]] <- kids[[1]]
           children[[length(children)+1]] <- kids[[2]]
         }
@@ -252,18 +234,16 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
     } # end for i (breed)
     
     ### mutation
-    # v_mutate <- Vectorize(mutate, "X", SIMPLIFY=F)
-    # children <- v_mutate(dm, children, alpha)
     for (j in 1:length(children)) { 
       if (runif(1,0,1) >= alpha) {
         # if test passed, mutate child
-        children[[j]] <- mutate(dm, children[[j]], alpha)
+        children[[j]] <- mutate(children[[j]], alpha)
       }
     } # end for j (mutate)
 
     ### assess fitness
     for (k in 1:length(children)) {
-      children[[k]] <- list(objfun(dm, children[[k]], lambda), children[[k]])
+      children[[k]] <- list(objfun(children[[k]], lambda, how), children[[k]])
     }
     
     ### cull
@@ -295,9 +275,12 @@ gen_alg <- function(dm, pop, gens, test, lambda=0) {
       }
     }
 
-    top <- herd[[1]]
+    # top <- herd[[1]]
+    top <- herd[[1]][[1]]
+    
+    print(paste(paste("Generation", g, sep=" "), top, sep=" | "))
   } # end while
   
   print(paste("Convergence achieved in ",g," iterations"))
-  return(herd[[1]])
+  return(herd[[1]][[2]])
 } # end gen_alg

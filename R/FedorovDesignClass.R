@@ -1,15 +1,19 @@
 # create attribute object
-design <- setRefClass("DesignMatrix", 
+DesignMatrix <- setRefClass("DesignMatrix", 
   fields = list(n = "numeric", names = "character", levels = "numeric", dist = "list", 
                 values = "list", interacts = "list", X = "matrix", L = "matrix",
-                dslacks = "list", islacks = "numeric")
+                dslacks = "list", islacks = "numeric", cholesky = "logical")
 ) # end attributeClass class definition
 
-design$methods(
+DesignMatrix$methods(
   # initialize = function(n) {
   #   .self$n <- n
   #   .self$islacks <- list()
   # }, # end initialize
+  
+  set_cholesky = function(cholesky) {
+    .self$cholesky = cholesky  
+  }, 
   
   add_attribute = function(name, levels, dist) {
     # adds an attribute & params to design
@@ -51,8 +55,9 @@ design$methods(
     # generates matrix based on distributions
     
     .self$X <- matrix()
-    .self$L <- matrix()
 
+    if (.self$cholesky) { .self$L <- matrix() }
+    
     # create column for each attribute
     for (j in 1:length(.self$names)) {
       # find approximately accurate distribution of values
@@ -93,12 +98,12 @@ design$methods(
     # save design
     .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
     
-    # save cholesky
-    A <- tryCatch(
-      expr = { solve( t(.self$X)%*%.self$X ) },
-      error = function(e) { return( MASS::ginv( t(.self$X)%*%.self$X ) ) }
-    )
-    .self$L <- try(chol(A))
+    if (.self$cholesky) {
+      # save cholesky
+      A <- t(.self$X)%*%.self$X
+      .self$L <- try(t(chol(A)))      
+    }
+
 
   }, # end generate
   
@@ -113,11 +118,12 @@ design$methods(
       #add row
       .self$X <- rbind(.self$X, row)
       row.names(.self$X) <- NULL
+      
       # recalculate values
+      if (.self$cholesky) { .self$update_chol(row) }
       .self$update_values()
-      # # recalculate slacks
-      # .self$update_dslacks()
-      # .self$update_islacks()
+      .self$update_slacks()
+
     }
   }, # end add_row
   
@@ -127,20 +133,61 @@ design$methods(
     } else if (i > nrow(.self$X)) {
       stop("Row index > number rows in design matrix")
     } else {
+      row <- .self$X[i,]
+      
       # delete row
       .self$X <- .self$X[-i,] 
+     
       # recalculate values
+      if (.self$cholesky) { .self$downdate_chol(row) }
       .self$update_values()
-      # # recalculate slacks
-      # .self$update_dslacks()
-      # .self$update_islacks()
+      .self$update_slacks()
+
     }
   }, # end del_row
   
   update_values = function() {
+    # reset .self$values from matrix X
     .self$values <- lapply(seq_len(ncol(.self$X)), function(i) {.self$X[,i]})
   }, # end update_values
   
+  update_chol = function(row) {
+    # updates the Cholesky with given row addition
+    n <- length(row)
+    for (k in 1:n) {
+      r <- sqrt(.self$L[k, k]^2 + row[k]^2)
+      c <- r / .self$L[k, k]
+      s <- row[k] / .self$L[k, k]
+      .self$L[k, k] <- r
+      if (k < n) {
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
+      }
+    }
+    # return(.self$L)
+  }, # end update_chol
+
+  downdate_chol = function(row) {
+    # "downdates"" the Cholesky with given row removal
+    n <- length(row)
+    for (k in 1:n) {
+      r <- sqrt(.self$L[k, k]^2 - row[k]^2)
+      c <- r / .self$L[k, k]
+      s <- row[k] /.self$ L[k, k]
+      .self$L[k, k] <- r
+      if (k < n) {
+        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
+        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
+      }
+    }
+    # return(.self$L)
+  }, # end downdate_chol
+
+  # det_chol = function() {
+  #   # returns the determinant of the cholesky
+  #   return(prod(diag(.self$L))^2)
+  # }, # end det_chol
+
   update_dslacks = function() {
     # updates all slacks from each attribute's distribution constraints
     .self$dslacks <- list()
@@ -187,3 +234,78 @@ design$methods(
     .self$update_islacks()
   }
 ) # end methods
+
+#-- Objective functions -----------------------------------------------------------
+penalty <- function(dm, lambda) {
+  # penatly calculator
+  # params:
+  # dm: DesignMatrix object with attributes and constraints
+  # X: design matrix
+  # lambda: penalty for slacks 
+  # returns: penalty
+  
+  # calculate slacks for the current design
+  dm$update_slacks()
+  
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + 2*lambda*(sum(abs(unlist(dm$islacks)))) )
+  return(penalty)
+}
+
+doptimality <- function(dm, lambda=0, how='chol') {
+  # calculates doptimality of DesignMatrix object 
+  # (and optionally penalizes distribution constraints)
+  # params:
+  # dm: DesignMatrix object containing attribute & constraint information
+  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # how: using standard determinant 'det' or cholesky update matrix 'chol' for calculation
+  # returns: d-efficiency metric
+
+  if (how == 'det') {
+    obj <- objective(dm)
+  } else if (how == 'chol') {
+    obj <- objective_chol(dm)
+  } else {
+    stop('Error: "how" not in c("det","chol")')
+  }
+
+  pen <- penalty(dm, lambda)
+  # this double-penalizes islacks b/c we really don't want impossible interactions
+
+  return(obj - pen)
+}
+
+objective <- function(dm) {
+  obj <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
+  # obj <- det( t(dm$X)%*%dm$X ) / nrow(dm$X)
+  return(obj)
+}
+
+det_chol <- function(L) {
+  # returns the determinant of the cholesky
+  return( prod(diag(L))^2 )
+}
+
+objective_chol <- function(dm) {
+  obj <- (100 * det_chol(dm$L)^(1/ncol(dm$X))) / nrow(dm$X)
+  # obj <- (100 * det_chol(dm$L) )
+  return(obj)
+}
+
+sumfisherz <- function(dm, lambda=0) {
+  # calculates the sum of the fisher z score of the absolute values of the correlation matrix
+  # minimization objective function
+  # params
+  # dm: DesignMatrix object containing attribute & constraint information
+  # lambda: weight to penalize constraints.  lambda=0 means no distribution constraints
+  # design: design matrix where columns are attributes and rows are patients
+  # returns correlation score
+  
+  # calculate slacks for the design
+  dm$update_slacks()
+
+  r <- abs(cor(dm$X))
+  z <- .5*(log(1+r)/(1-r))
+  obj <- sum(z[is.finite(z)])
+  pen <- penalty(dm, lambda)
+  return(obj + pen)
+}
