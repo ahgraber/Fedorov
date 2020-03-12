@@ -118,18 +118,15 @@ f_time
 doptimality(f_DM, lambda=lmda, how='det')
 doptimality(f_DM, lambda=lmda, how='chol')
 sumfisherz(f_DM, lambda=lmda)
-print(' ')
 
 print('Fedorov - Cholesky')
 fc_time
 doptimality(fc_DM, lambda=lmda, how='det')
 doptimality(fc_DM, lambda=lmda, how='chol')
 sumfisherz(fc_DM, lambda=lmda)
-print(' ')
 
 print('Fedorov - GA')
 ga_time
 doptimality(ga_DM, lambda=lmda, how='det')
 doptimality(ga_DM, lambda=lmda, how='chol')
 sumfisherz(ga_DM, lambda=lmda)
-print(' ')

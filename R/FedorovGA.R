@@ -210,75 +210,76 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
   while ((g < gens) && (converge < log2(gens))) {
     # stop if reach maximum generations OR 
     # if difference between top designs remains small for some number of generations
-
-    if ((pop %% 2) != 0) { nelite <- nelite-1} # adjust for odd population
-    elite <- head(herd, nelite)
-    stock <- tail(herd, -nelite)
     
-    ### breed randomized pairs
-    x <- sample(c(1:length(stock)))
-    y <- sample(c(1:length(stock)))
-    children <- list()
-    for (i in 1:length(stock)) { 
-      if (x[i] != y[i]) { # no self-replication
-        if (runif(1,0,1) >= alpha){
-          # if test passed, breed & save children
-          kids <- breed(
-            stock[[ x[i] ]][[2]], 
-            stock[[ y[i] ]][[2]]
-          ) 
-          children[[length(children)+1]] <- kids[[1]]
-          children[[length(children)+1]] <- kids[[2]]
+    gen_time <- system.time({
+      if ((pop %% 2) != 0) { nelite <- nelite-1} # adjust for odd population
+      elite <- head(herd, nelite)
+      stock <- tail(herd, -nelite)
+      
+      ### breed randomized pairs
+      x <- sample(c(1:length(stock)))
+      y <- sample(c(1:length(stock)))
+      children <- list()
+      for (i in 1:length(stock)) { 
+        if (x[i] != y[i]) { # no self-replication
+          if (runif(1,0,1) >= alpha){
+            # if test passed, breed & save children
+            kids <- breed(
+              stock[[ x[i] ]][[2]], 
+              stock[[ y[i] ]][[2]]
+            ) 
+            children[[length(children)+1]] <- kids[[1]]
+            children[[length(children)+1]] <- kids[[2]]
+          }
+        }
+      } # end for i (breed)
+      
+      ### mutation
+      for (j in 1:length(children)) { 
+        if (runif(1,0,1) >= alpha) {
+          # if test passed, mutate child
+          children[[j]] <- mutate(children[[j]], alpha)
+        }
+      } # end for j (mutate)
+  
+      ### assess fitness
+      for (k in 1:length(children)) {
+        children[[k]] <- list(objfun(children[[k]], lambda, how), children[[k]])
+      }
+      
+      ### cull
+      herd <- cull(elite, herd, children, pop, dir)
+  
+      ### updates
+      g <- g+1
+      if (dir == "max") {
+        if ((herd[[1]][[1]]-top[[1]]) < 10e-6 ) {
+          # maximizing, so change should be positive
+          # if the change in objval (new - old) 0 and small pos number, system is converging
+            # smallest possible change is 0 (i.e., same best design) b/c preserving elites
+          # if converging, count as a converge step to potentially break out of while loop
+          converge <- converge+1
+        } else {
+          # if not a converge step, reset converge coutner to 0
+          converge <- 0
+        }
+      } else if (dir == "min") {
+        if ((herd[[1]][[1]]-top[[1]]) > -10e-6 ) {
+          # minimizing, so change should be negative
+          # if the change in objval (new - old) small neg number and 0, system is converging
+            # largest possible change is 0 (i.e., same best design) b/c preserving elites
+          # if converging, count as a converge step to potentially break out of while loop
+          converge <- converge+1
+        } else {
+          # if not a converge step, reset converge coutner to 0
+          converge <- 0
         }
       }
-    } # end for i (breed)
-    
-    ### mutation
-    for (j in 1:length(children)) { 
-      if (runif(1,0,1) >= alpha) {
-        # if test passed, mutate child
-        children[[j]] <- mutate(children[[j]], alpha)
-      }
-    } # end for j (mutate)
-
-    ### assess fitness
-    for (k in 1:length(children)) {
-      children[[k]] <- list(objfun(children[[k]], lambda, how), children[[k]])
-    }
-    
-    ### cull
-    herd <- cull(elite, herd, children, pop, dir)
-
-    ### updates
-    g <- g+1
-    if (dir == "max") {
-      if ((herd[[1]][[1]]-top[[1]]) < 10e-6 ) {
-        # maximizing, so change should be positive
-        # if the change in objval (new - old) 0 and small pos number, system is converging
-          # smallest possible change is 0 (i.e., same best design) b/c preserving elites
-        # if converging, count as a converge step to potentially break out of while loop
-        converge <- converge+1
-      } else {
-        # if not a converge step, reset converge coutner to 0
-        converge <- 0
-      }
-    } else if (dir == "min") {
-      if ((herd[[1]][[1]]-top[[1]]) > -10e-6 ) {
-        # minimizing, so change should be negative
-        # if the change in objval (new - old) small neg number and 0, system is converging
-          # largest possible change is 0 (i.e., same best design) b/c preserving elites
-        # if converging, count as a converge step to potentially break out of while loop
-        converge <- converge+1
-      } else {
-        # if not a converge step, reset converge coutner to 0
-        converge <- 0
-      }
-    }
-
-    # top <- herd[[1]]
-    top <- herd[[1]][[1]]
-    
-    print(paste(paste("Generation", g, sep=" "), top, sep=" | "))
+  
+      # top <- herd[[1]]
+      top <- herd[[1]][[1]]
+    })
+    print(paste(paste("Generation", g, "in", gen_time, "seconds", sep=" "), top, sep=" | "))
   } # end while
   
   print(paste("Convergence achieved in ",g," iterations"))
