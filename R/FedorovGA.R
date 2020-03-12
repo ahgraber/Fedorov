@@ -279,7 +279,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
       # top <- herd[[1]]
       top <- herd[[1]][[1]]
     })
-    print(paste(paste("Generation", g, "in", gen_time, "seconds", sep=" "), top, sep=" | "))
+    print(paste(paste("Generation", g, "in", round(gen_time[3],4), "seconds", sep=" "), round(top,5), sep=" | "))
   } # end while
   
   print(paste("Convergence achieved in ",g," iterations"))

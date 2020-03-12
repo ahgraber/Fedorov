@@ -72,9 +72,10 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
   # iterate until the improvement in D-optimality is minimal or 100 iterations is reached
   while ((obj_delta_best > 10e-6) && (n_iter < iter)) {
 
+    iter_time <- NULL
     dm_best <- NULL
     obj_delta_best <- 0
-    
+
     iter_time <- system.time({
       for (i in 1:n) {                      # iterate through rows in design matrix
         for (j in 1:nrow(candidate_set)) {  # iterate through rows in candidate set
@@ -104,7 +105,14 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
             obj_best <- obj_test
   
             # print(paste(paste("Iteration", n_iter, "candidate_set swap", i, sep=" "), dvar_best, obj_delta_best, obj_best, sep=" | "))
-            print(paste(paste("Iteration", n_iter, "candidate_set swap", i, sep=" "), obj_delta_best, obj_best, sep=" | "))
+            print(
+              paste(
+                paste("Iteration", n_iter, "design", i, "candidate", j, sep=" "), 
+                round(obj_delta_best,5), 
+                round(obj_best,5), 
+                sep=" | "
+              )
+            )
           } else {
             next
           }
@@ -115,24 +123,25 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
           try(rm(obj_delta), silent=T)
         } # end for j
       } # end for i
-  
-      ### updates
-      if (is.null(dm_best)) {
-        # no better swaps found
-        break
-      } else {
-        # retain swap
-        dm <- dm_best$copy(shallow=TRUE)
-  
-        # update the determinant following the swap
-        # det <- det*(1+dvar_best)
-        det <- det*(1+dvar_best) + penalty(dm_best, lambda)
-        obj <- obj_best
-        
-        n_iter <- n_iter+1
-      }
-    })
-    print(paste("Iteration", n_iter-1, "in", iter_time, "seconds", sep=" "))
+    }) # end system.time
+    print(paste("Iteration", n_iter, "in", round(iter_time[3],4), "seconds", sep=" "))
+
+    ### updates
+    if (is.null(dm_best)) {
+      # no better swaps found
+      break
+    } else {
+      # retain swap
+      dm <- dm_best$copy(shallow=TRUE)
+
+      # update the determinant following the swap
+      # det <- det*(1+dvar_best)
+      det <- det*(1+dvar_best) + penalty(dm_best, lambda)
+      obj <- obj_best
+      
+      n_iter <- n_iter+1
+    } # end updates
+
   } # end while
   
   if (n_iter == iter) {

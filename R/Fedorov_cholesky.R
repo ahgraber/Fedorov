@@ -39,7 +39,14 @@ fedorov_chol <- function(dm, candidate_set, n, lambda=0, iter=100) {
             obj_delta_best <- obj_delta
             obj_best <- obj_test
   
-            print(paste(paste("Iteration", n_iter, "candidate_set swap", i, sep=" "), obj_delta_best, obj_best, sep=" | "))
+            print(
+              paste(
+                paste("Iteration", n_iter, "design", i, "candidate", j, sep=" "), 
+                round(obj_delta_best,5), 
+                round(obj_best,5), 
+                sep=" | "
+              )
+            )
           } else {
             next
           }
@@ -49,22 +56,23 @@ fedorov_chol <- function(dm, candidate_set, n, lambda=0, iter=100) {
   
         } # end for j
       } # end for i
-  
-      ### updates
-      if (is.null(dm_best)) {
-        # no better swaps found
-        break
-      } else {
-        # retain swap
-        dm <- dm_best$copy(shallow=TRUE)
-        
-        # update doptimality following the swap
-        obj <- obj_best
-        
-        n_iter <- n_iter+1
-      }
-    })
-  print(paste("Iteration", n_iter-1, "in", iter_time, "seconds", sep=" "))    
+    }) # end system.time
+    print(paste("Iteration", n_iter, "in", round(iter_time[3],4), "seconds", sep=" "))
+    
+    ### updates
+    if (is.null(dm_best)) {
+      # no better swaps found
+      break
+    } else {
+      # retain swap
+      dm <- dm_best$copy(shallow=TRUE)
+      
+      # update doptimality following the swap
+      obj <- obj_best
+      
+      n_iter <- n_iter+1
+    } # end updates
+      
   } # end while
   
   if (n_iter == iter) {
