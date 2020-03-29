@@ -21,10 +21,10 @@ dm$add_attribute(name="dia", levels=2, dist=c(50,50))
 dm$add_attribute(name="angn", levels=3, dist=c(50,25,25))
 dm$add_attribute(name="ldl", levels=3, dist=c(25,50,25))
 dm$add_attribute(name="bp", levels=3, dist=c(25,50,25))
-dm$add_attribute(name="a1c", levels=4, dist=c(25,25,25,25))
-dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
-dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
-dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
+# dm$add_attribute(name="a1c", levels=4, dist=c(25,25,25,25))
+# dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
+# dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
+# dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
 # dm$add_attribute(name="strk", levels=2, dist=c(75,25))
 # dm$add_attribute(name="ptx", levels=4, dist=c(25,25,25,25))
 # dm$add_attribute(name="hist", levels=3, dist=c(50,25,25))
@@ -90,7 +90,7 @@ f_time <- system.time(
 f_DM$X
 doptimality(f_DM, lambda=lmda, how='det')
 doptimality(f_DM, lambda=lmda, how='chol')
-sumfisherz(f_DM, lambda=lmda)
+sumfisherz(f_DM, lambda=lmda)up
 
 ## -- FEDOROV + CHOLESKY -----------------------------------
 fc_time <- system.time(
