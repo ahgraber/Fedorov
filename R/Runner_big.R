@@ -90,7 +90,7 @@ f_time <- system.time(
 f_DM$X
 doptimality(f_DM, lambda=lmda, how='det')
 # force update L to confirm doptimality w/ cholesky method
-dm$L <- try(t(chol(t(dm$X)%*%dm$X)))    
+f_DM$L <- try(t(chol(t(f_DM$X)%*%f_DM$X)))
 doptimality(f_DM, lambda=lmda, how='chol')
 sumfisherz(f_DM, lambda=lmda)up
 
