@@ -191,17 +191,11 @@ DesignMatrix$methods(
 
   update_dslacks = function() {
     # updates all slacks from each attribute's distribution constraints
-    .self$dslacks <- list()
-    for (i in 1:length(.self$names)) {
-      vals <- c()
-      for (j in 1:.self$levels[i]-1) {
-        # count the number of rows with the current level
-        vals <- append(vals, length(which(.self$values[[i]]==j)))
-      }
-      .self$dslacks[[i]] <- .self$dist[[i]]/.self$n - vals
-    }
-    # .self$dslacks <- mapply(function(d,v) {(d*.self$n) - (as.numeric(table(v)))},
-    #                         d=.self$dist, v=.self$values)
+    .self$dslacks <- lapply(seq_len(ncol(dm$X)), function(i) {
+      prop.table(
+        apply(dm$X, MARGIN=2, FUN=table)[[i]]
+      )
+    })
   }, # end update_dslacks
   
   update_islacks = function() {
@@ -221,8 +215,6 @@ DesignMatrix$methods(
           .self$islacks <- .self$islacks + (sum(testA) - sum(testA & testB))
         } else {
           # if A must != B, count all where ==
-          # testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
-          # testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
           .self$islacks <- .self$islacks + (sum(testA & testB))
         }
       } # end for 
