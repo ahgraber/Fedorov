@@ -29,7 +29,6 @@ lmda <- 1
 
 # view attributes of dm
 dm$names
-dm$values
 dm$islacks
 dm$dslacks
 dm$X
