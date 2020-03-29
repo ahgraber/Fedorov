@@ -74,6 +74,8 @@ f_time <- system.time({
 # f_DM
 f_DM$X
 doptimality(f_DM, lambda=lmda, how='det')
+
+f_DM$update_chol()
 doptimality(f_DM, lambda=lmda, how='chol')
 sumfisherz(f_DM, lambda=lmda)
 
@@ -83,8 +85,9 @@ fc_time <- system.time({
   fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda, iter=20)
 })
 # fc_DM
-fc_DM$X
 doptimality(fc_DM, lambda=lmda, how='det')
+# force update L to confirm doptimality w/ cholesky method
+dm$L <- try(t(chol(t(dm$X)%*%dm$X)))    
 doptimality(fc_DM, lambda=lmda, how='chol')
 sumfisherz(fc_DM, lambda=lmda)
 
