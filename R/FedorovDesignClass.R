@@ -1,3 +1,8 @@
+# force install package for cholesky up/downdate
+if (!require('ramcmc',character.only = TRUE)) {
+  install.packages('ramcmc',dep=TRUE)
+}
+
 # create attribute object
 DesignMatrix <- setRefClass("DesignMatrix", 
   fields = list(n = "numeric", names = "character", levels = "numeric", dist = "list", 
@@ -139,65 +144,16 @@ DesignMatrix$methods(
     }
   }, # end del_row
   
-  # update_values = function() {
-  #   # reset .self$values from matrix X
-  #   .self$values <- lapply(seq_len(ncol(.self$X)), function(i) {.self$X[,i]})
-  # }, # end update_values
-  
   update_chol = function(row) {
     # updates the Cholesky with given row addition
-    n <- length(row)
 
-    for (k in 1:n) {
-      r <- sqrt(.self$L[k, k]^2 + row[k]^2)
-      c <- r / .self$L[k, k]
-      s <- row[k] / .self$L[k, k]
-      .self$L[k, k] <- r
-      if (k < n) {
-        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c
-        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
-      }
-    }
-
-    # lapply(seq_len(n), function(k) {
-    #   r <- sqrt(.self$L[k,k]^2 + row[k]^2)
-    #   c <- r / .self$L[k,k]
-    #   s <- row[k] / .self$L[k,k]
-    #   .self$L[k,k] <- r
-    #   if (k < n) {
-    #     .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c
-    #     row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
-    #   } # end if
-    # }) # end lapply
-    # return(.self$L)
+    .self$L <- ramcmc::chol_update(.self$L, row)
   }, # end update_chol
 
   downdate_chol = function(row) {
     # "downdates"" the Cholesky with given row removal
-    n <- length(row)
-
-    for (k in 1:n) {
-      r <- sqrt(.self$L[k, k]^2 - row[k]^2)
-      c <- r / .self$L[k, k]
-      s <- row[k] /.self$L[k, k]
-      .self$L[k, k] <- r
-      if (k < n) {
-        .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
-        row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
-      }
-    }
-
-    # lapply(seq_len(n), function(k) {
-    #   r <- sqrt(.self$L[k, k]^2 - row[k]^2)
-    #   c <- r / .self$L[k, k]
-    #   s <- row[k] /.self$L[k, k]
-    #   .self$L[k, k] <- r
-    #   if (k < n) {
-    #     .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
-    #     row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
-    #   }
-    # }) # end lapply
-    # return(.self$L)
+    
+    .self$L <- ramcmc::chol_downdate(.self$L, row)
   }, # end downdate_chol
 
   # det_chol = function() {
@@ -207,15 +163,7 @@ DesignMatrix$methods(
 
   update_dslacks = function() {
     # updates all slacks from each attribute's distribution constraints
-    # .self$dslacks <- list()
-    # for (i in 1:length(.self$names)) {
-    #   vals <- c()
-    #   for (j in 1:.self$levels[i]-1) {
-    #     # count the number of rows with the current level
-    #     vals <- append(vals, sum(.self$values[[i]]==j))
-    #   }
-    #   .self$dslacks[[i]] <- .self$dist[[i]]*.self$n - vals
-    # }
+
     new_dist <- lapply(apply(dm$X, MARGIN=2, FUN=table), prop.table)
     .self$dslacks <- mapply(`-`, dm$dist, new_dist)
   }, # end update_dslacks
@@ -259,14 +207,10 @@ penalty <- function(dm, lambda) {
   # penatly calculator
   # params:
   # dm: DesignMatrix object with attributes and constraints
-  # X: design matrix
   # lambda: penalty for slacks 
   # returns: penalty
-  
-  # calculate slacks for the current design
-  # dm$update_slacks()
-  
-  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + 2*lambda*(sum(abs(unlist(dm$islacks)))) )
+
+  penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + lambda*2*(sum(abs(unlist(dm$islacks)))) )
   return(penalty)
 }
 
@@ -287,8 +231,7 @@ doptimality <- function(dm, lambda=0, how='chol') {
     stop('Error: "how" not in c("det","chol")')
   }
 
-  pen <- penalty(dm, lambda)
-  # this double-penalizes islacks b/c we really don't want impossible interactions
+  pen <- penalty(dm, lambda)  # this double-penalizes islacks b/c we really don't want impossible interactions
 
   return(obj - pen)
 }
@@ -310,7 +253,7 @@ objective_chol <- function(dm) {
   return(obj)
 }
 
-sumfisherz <- function(dm, lambda=0) {
+sumfisherz <- function(dm, lambda=0, how=NULL) {
   # calculates the sum of the fisher z score of the absolute values of the correlation matrix
   # minimization objective function
   # params

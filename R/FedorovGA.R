@@ -110,13 +110,12 @@ mutate <- function(dm, alpha) {
   # update DesignMatrix
   row_idx <- which(row_mask[,1])
   for (i in row_idx) {
-    # add mutation as new row
+    # add mutation as new row to bottom of matrix
     dm$add_row(X[i,])
-    # remove unmuated row
+    # remove (old) unmuated row
     dm$del_row(i)
-    dm$update_slacks()
   }
-
+  dm$update_slacks()
   return(dm)
   # return(list(X, score)) # return updated matrix AND updated fitness??
   
@@ -215,7 +214,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
     # if difference between top designs remains small for some number of generations
     
     gen_time <- system.time({
-      if ((pop %% 2) != 0) { nelite <- nelite-1} # adjust for odd population
+      if ((pop %% 2) != 0) { nelite <- nelite-1 } # adjust for odd population
       elite <- head(herd, nelite)
       stock <- tail(herd, -nelite)
       
@@ -227,10 +226,13 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
         if (x[i] != y[i]) { # no self-replication
           if (runif(1,0,1) >= alpha){
             # if test passed, breed & save children
-            kids <- breed(
-              stock[[ x[i] ]][[2]], 
-              stock[[ y[i] ]][[2]]
-            ) 
+            try(
+              kids <- breed(
+                stock[[ x[i] ]][[2]], 
+                stock[[ y[i] ]][[2]]
+              ),
+              silent=T
+            )
             children[[length(children)+1]] <- kids[[1]]
             children[[length(children)+1]] <- kids[[2]]
           }
@@ -241,7 +243,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
       for (j in 1:length(children)) { 
         if (runif(1,0,1) >= alpha) {
           # if test passed, mutate child
-          children[[j]] <- mutate(children[[j]], alpha)
+          try(children[[j]] <- mutate(children[[j]], alpha), silent=T)
         }
       } # end for j (mutate)
   
