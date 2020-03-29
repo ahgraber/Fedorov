@@ -84,7 +84,8 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
           dm_test <- dm$copy(shallow=TRUE)
           dm_test$add_row(candidate_set[j,])
           dm_test$del_row(i)
-  
+          dm_test$update_slacks()
+
           # calculate the potential % improvement in D-optimality from the row swap
           dvar <- delta_var(dm$X, dm$X[i,], candidate_set[j,])
           obj_delta <- update_obj(dm, dm_test, lambda, det, dvar)
@@ -133,7 +134,8 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
     } else {
       # retain swap
       dm <- dm_best$copy(shallow=TRUE)
-
+      # check slacks just to be sure
+      dm$update_slacks()
       # update the determinant following the swap
       # det <- det*(1+dvar_best)
       det <- det*(1+dvar_best) + penalty(dm_best, lambda)

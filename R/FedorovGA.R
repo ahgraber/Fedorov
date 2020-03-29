@@ -71,7 +71,9 @@ breed <- function(p1, p2){
       c2$del_row(i)
     }
   }
-
+  
+  c1$update_slacks()
+  c2$update_slacks()
   return(list(c1, c2))
 } # end breed
 
@@ -112,6 +114,7 @@ mutate <- function(dm, alpha) {
     dm$add_row(X[i,])
     # remove unmuated row
     dm$del_row(i)
+    dm$update_slacks()
   }
 
   return(dm)

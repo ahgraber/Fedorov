@@ -27,7 +27,8 @@ fedorov_chol <- function(dm, candidate_set, n, lambda=0, iter=100) {
           dm_test <- dm$copy(shallow=TRUE)
           dm_test$add_row(candidate_set[j,])
           dm_test$del_row(i)
-  
+          dm_test$update_slacks()
+
           # calculate change from the row swap
           # obj_test <- det_chol(dm_test$L) - penalty(dm_test, lambda)
           obj_test <- doptimality(dm_test, lambda, how='chol')
@@ -66,7 +67,8 @@ fedorov_chol <- function(dm, candidate_set, n, lambda=0, iter=100) {
     } else {
       # retain swap
       dm <- dm_best$copy(shallow=TRUE)
-      
+      # check slacks just to be sure
+      dm$update_slacks()
       # update doptimality following the swap
       obj <- obj_best
       

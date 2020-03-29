@@ -1,7 +1,7 @@
 # create attribute object
 DesignMatrix <- setRefClass("DesignMatrix", 
   fields = list(n = "numeric", names = "character", levels = "numeric", dist = "list", 
-                values = "list", interacts = "list", X = "matrix", L = "matrix",
+                interacts = "list", X = "matrix", L = "matrix",
                 dslacks = "list", islacks = "numeric", cholesky = "logical")
 ) # end attributeClass class definition
 
@@ -55,9 +55,9 @@ DesignMatrix$methods(
     # generates matrix based on distributions
     
     .self$X <- matrix()
-
     if (.self$cholesky) { .self$L <- matrix() }
-    
+
+    values <- c()
     # create column for each attribute
     for (j in 1:length(.self$names)) {
       # find approximately accurate distribution of values
@@ -83,21 +83,15 @@ DesignMatrix$methods(
       
       # save values to object
       vals <- sample(column-1) # convert to 0-based, randomize order
-      .self$values[[j]] <- vals
-      
-      # calculate slacks
-      .self$dslacks <- list()
-      vals <- c()
-      for (k in 1:.self$levels[j]-1) {
-        vals <- append(vals, length(which(.self$values[[j]]==k)))
-      }
-      .self$dslacks[[j]] <- .self$dist[[j]]*.self$n - vals
-      
+      # .self$values[[j]] <- vals
+      values <- append(values, vals)
     } # end for j
-    
-    # save design
-    .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
-    
+          
+    # # save design
+    # .self$X <- matrix(unlist(.self$values), nrow=.self$n, ncol=length(.self$names))
+    .self$X <- matrix(unlist(values), nrow=.self$n, ncol=length(.self$names))
+    .self$update_dslacks()
+
     if (.self$cholesky) {
       # save cholesky
       A <- t(.self$X)%*%.self$X
@@ -122,8 +116,7 @@ DesignMatrix$methods(
       
       # recalculate values
       if (.self$cholesky) { .self$update_chol(row) }
-      .self$update_values()
-      .self$update_slacks()
+      # .self$update_slacks()
 
     }
   }, # end add_row
@@ -141,20 +134,20 @@ DesignMatrix$methods(
      
       # recalculate values
       if (.self$cholesky) { .self$downdate_chol(row) }
-      .self$update_values()
-      .self$update_slacks()
+      # .self$update_slacks()
 
     }
   }, # end del_row
   
-  update_values = function() {
-    # reset .self$values from matrix X
-    .self$values <- lapply(seq_len(ncol(.self$X)), function(i) {.self$X[,i]})
-  }, # end update_values
+  # update_values = function() {
+  #   # reset .self$values from matrix X
+  #   .self$values <- lapply(seq_len(ncol(.self$X)), function(i) {.self$X[,i]})
+  # }, # end update_values
   
   update_chol = function(row) {
     # updates the Cholesky with given row addition
     n <- length(row)
+
     for (k in 1:n) {
       r <- sqrt(.self$L[k, k]^2 + row[k]^2)
       c <- r / .self$L[k, k]
@@ -165,22 +158,45 @@ DesignMatrix$methods(
         row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
+
+    # lapply(seq_len(n), function(k) {
+    #   r <- sqrt(.self$L[k,k]^2 + row[k]^2)
+    #   c <- r / .self$L[k,k]
+    #   s <- row[k] / .self$L[k,k]
+    #   .self$L[k,k] <- r
+    #   if (k < n) {
+    #     .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] + s * row[(k+1):n]) / c
+    #     row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
+    #   } # end if
+    # }) # end lapply
     # return(.self$L)
   }, # end update_chol
 
   downdate_chol = function(row) {
     # "downdates"" the Cholesky with given row removal
     n <- length(row)
+
     for (k in 1:n) {
       r <- sqrt(.self$L[k, k]^2 - row[k]^2)
       c <- r / .self$L[k, k]
-      s <- row[k] /.self$ L[k, k]
+      s <- row[k] /.self$L[k, k]
       .self$L[k, k] <- r
       if (k < n) {
         .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
         row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
       }
     }
+
+    # lapply(seq_len(n), function(k) {
+    #   r <- sqrt(.self$L[k, k]^2 - row[k]^2)
+    #   c <- r / .self$L[k, k]
+    #   s <- row[k] /.self$L[k, k]
+    #   .self$L[k, k] <- r
+    #   if (k < n) {
+    #     .self$L[(k+1):n, k] <- (.self$L[(k+1):n, k] - s * row[(k+1):n]) / c
+    #     row[(k+1):n] <- c * row[(k+1):n] - s * .self$L[(k+1):n, k]
+    #   }
+    # }) # end lapply
     # return(.self$L)
   }, # end downdate_chol
 
@@ -191,33 +207,43 @@ DesignMatrix$methods(
 
   update_dslacks = function() {
     # updates all slacks from each attribute's distribution constraints
-    .self$dslacks <- lapply(seq_len(ncol(dm$X)), function(i) {
-      prop.table(
-        apply(dm$X, MARGIN=2, FUN=table)[[i]]
-      )
-    })
+    # .self$dslacks <- list()
+    # for (i in 1:length(.self$names)) {
+    #   vals <- c()
+    #   for (j in 1:.self$levels[i]-1) {
+    #     # count the number of rows with the current level
+    #     vals <- append(vals, sum(.self$values[[i]]==j))
+    #   }
+    #   .self$dslacks[[i]] <- .self$dist[[i]]*.self$n - vals
+    # }
+    new_dist <- lapply(apply(dm$X, MARGIN=2, FUN=table), prop.table)
+    .self$dslacks <- mapply(`-`, dm$dist, new_dist)
   }, # end update_dslacks
   
   update_islacks = function() {
     # updates all slacks from interaction constraints
-    .self$islacks <- 0
-    
-    if (length(interacts) > 0) {
-      for (i in 1:length(interacts)) {
-        indx1 <- which(.self$names == .self$interacts[[i]][[1]])
-        indx2 <- which(.self$names == .self$interacts[[i]][[2]])
 
-        testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
-        testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
-
-        if (.self$interacts[[i]][[5]]) {
+    if (length(.self$interacts) > 0) {
+      interactions <- sapply(.self$interacts, function(i) {
+        intr <- unlist(i)
+        
+        indx1 <- which(.self$names == intr[[1]])
+        indx2 <- which(.self$names == intr[[2]])
+        
+        testA <- .self$X[,indx1] == intr[[3]]
+        testB <- .self$X[,indx2] == intr[[4]]
+        
+        if (intr[[5]]) {
           # if A must == B, count all where !=
-          .self$islacks <- .self$islacks + (sum(testA) - sum(testA & testB))
+          (sum(testA) - sum(testA & testB))
         } else {
           # if A must != B, count all where ==
-          .self$islacks <- .self$islacks + (sum(testA & testB))
+          # testA <- .self$X[,indx1] == .self$interacts[[i]][[3]]
+          # testB <- .self$X[,indx2] == .self$interacts[[i]][[4]]
+          (sum(testA & testB))
         }
-      } # end for 
+      })
+      .self$islacks <- sum (interactions)
     } # end if
   },  # end update_islacks
   
@@ -238,7 +264,7 @@ penalty <- function(dm, lambda) {
   # returns: penalty
   
   # calculate slacks for the current design
-  dm$update_slacks()
+  # dm$update_slacks()
   
   penalty <- lambda*( sum(abs(unlist(dm$dslacks))) + 2*lambda*(sum(abs(unlist(dm$islacks)))) )
   return(penalty)
