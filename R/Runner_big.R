@@ -50,19 +50,27 @@ dm$islacks
 dm$dslacks
 dm$X
 
-# duplicate design matrix for testing
+### duplicate design matrix for testing
+# fedorov - deterimant
 dm_fed <- dm$copy(shallow=T)
 dm_fed$set_cholesky(cholesky=F)
-
+# fedorov - cholesky
 dm_chol <- dm$copy(shallow=T)
+dm_chol$set_cholesky(cholesky=T)
+# genetic - determinant
 dm_ga <- dm$copy(shallow=T)
+dm_ga$set_cholesky(cholesky=F)
+# genetic - cholesky
+dm_gac <- dm$copy(shallow=T)
+dm_gac$set_cholesky(cholesky=T)
 
 # check cholesky enable/disable
 dm_fed$cholesky
 dm_chol$cholesky
 dm_ga$cholesky
+dm_gac$cholesky
 
-# test initial optimality
+### test initial optimality
 doptimality(dm, lambda=lmda, how='det')
 doptimality(dm, lambda=lmda, how='chol')
 sumfisherz(dm, lambda=lmda)
@@ -83,36 +91,53 @@ candidate_set <- as.matrix(candidate_set)
 candidate_set <- candidate_set-1
 
 ## -- FEDOROV --------------------------------------------
-f_time <- system.time(
-  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda) # iter=20
-)
+f_time <- system.time({
+  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda, iter=20)
+})
 # f_DM
 f_DM$X
 doptimality(f_DM, lambda=lmda, how='det')
+
 # force update L to confirm doptimality w/ cholesky method
 f_DM$L <- try(t(chol(t(f_DM$X)%*%f_DM$X)))
 doptimality(f_DM, lambda=lmda, how='chol')
-sumfisherz(f_DM, lambda=lmda)up
+sumfisherz(f_DM, lambda=lmda)
 
 ## -- FEDOROV + CHOLESKY -----------------------------------
-fc_time <- system.time(
-  fc_DM <- fedorov(dm_chol, candidate_set, n, lambda=lmda) # iter=20
-)
+### generate candidate set 
+fc_time <- system.time({
+  fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda, iter=20)
+})
 # fc_DM
-fc_DM$X
 doptimality(fc_DM, lambda=lmda, how='det')
+
 doptimality(fc_DM, lambda=lmda, how='chol')
 sumfisherz(fc_DM, lambda=lmda)
 
-## -- GA -----------------------------------
+## -- GENETIC -----------------------------------
 ga_time <- system.time({
-  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda)
+  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda, how='det')
 })
 # ga_DM
 ga_DM$X
 doptimality(ga_DM, lambda=lmda, how='det')
+
+# force update L to confirm doptimality w/ cholesky method
+ga_DM$L <- try(t(chol(t(ga_DM$X)%*%ga_DM$X)))
 doptimality(ga_DM, lambda=lmda, how='chol')
+
 sumfisherz(ga_DM, lambda=lmda)
+
+## -- GENETIC + CHOLESKY -----------------------------------
+gac_time <- system.time({
+  gac_DM <- gen_alg(dm_gac, pop=16, gens=1000, test='doptimality', lambda=lmda, how='chol')
+})
+# ga_DM
+gac_DM$X
+doptimality(gac_DM, lambda=lmda, how='det')
+doptimality(gac_DM, lambda=lmda, how='chol')
+sumfisherz(gac_DM, lambda=lmda)
+
 
 ## -- SUMMARY -----------------------------------
 print('Fedorov')
@@ -132,3 +157,9 @@ ga_time
 doptimality(ga_DM, lambda=lmda, how='det')
 doptimality(ga_DM, lambda=lmda, how='chol')
 sumfisherz(ga_DM, lambda=lmda)
+
+print('Fedorov - GA - Cholesky')
+gac_time
+doptimality(gac_DM, lambda=lmda, how='det')
+doptimality(gac_DM, lambda=lmda, how='chol')
+sumfisherz(gac_DM, lambda=lmda)

@@ -34,19 +34,27 @@ dm$islacks
 dm$dslacks
 dm$X
 
-# duplicate design matrix for testing
+### duplicate design matrix for testing
+# fedorov - deterimant
 dm_fed <- dm$copy(shallow=T)
 dm_fed$set_cholesky(cholesky=F)
-
+# fedorov - cholesky
 dm_chol <- dm$copy(shallow=T)
+dm_chol$set_cholesky(cholesky=T)
+# genetic - determinant
 dm_ga <- dm$copy(shallow=T)
+dm_ga$set_cholesky(cholesky=F)
+# genetic - cholesky
+dm_gac <- dm$copy(shallow=T)
+dm_gac$set_cholesky(cholesky=T)
 
 # check cholesky enable/disable
 dm_fed$cholesky
 dm_chol$cholesky
 dm_ga$cholesky
+dm_gac$cholesky
 
-# test initial optimality
+### test initial optimality
 doptimality(dm, lambda=lmda, how='det')
 doptimality(dm, lambda=lmda, how='chol')
 sumfisherz(dm, lambda=lmda)
@@ -91,15 +99,30 @@ doptimality(fc_DM, lambda=lmda, how='det')
 doptimality(fc_DM, lambda=lmda, how='chol')
 sumfisherz(fc_DM, lambda=lmda)
 
-## -- GENETIC + CHOLESKY -----------------------------------
+## -- GENETIC -----------------------------------
 ga_time <- system.time({
-  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda)
+  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda, how='det')
 })
 # ga_DM
 ga_DM$X
 doptimality(ga_DM, lambda=lmda, how='det')
+
+# force update L to confirm doptimality w/ cholesky method
+ga_DM$L <- try(t(chol(t(ga_DM$X)%*%ga_DM$X)))
 doptimality(ga_DM, lambda=lmda, how='chol')
+
 sumfisherz(ga_DM, lambda=lmda)
+
+
+## -- GENETIC + CHOLESKY -----------------------------------
+gac_time <- system.time({
+  gac_DM <- gen_alg(dm_gac, pop=16, gens=1000, test='doptimality', lambda=lmda, how='chol')
+})
+# ga_DM
+gac_DM$X
+doptimality(gac_DM, lambda=lmda, how='det')
+doptimality(gac_DM, lambda=lmda, how='chol')
+sumfisherz(gac_DM, lambda=lmda)
 
 
 ## -- SUMMARY -----------------------------------
@@ -120,3 +143,9 @@ ga_time
 doptimality(ga_DM, lambda=lmda, how='det')
 doptimality(ga_DM, lambda=lmda, how='chol')
 sumfisherz(ga_DM, lambda=lmda)
+
+print('Fedorov - GA - Cholesky')
+gac_time
+doptimality(gac_DM, lambda=lmda, how='det')
+doptimality(gac_DM, lambda=lmda, how='chol')
+sumfisherz(gac_DM, lambda=lmda)
