@@ -8,8 +8,10 @@ var_est <- function(D, i, j) {
   
   # attempting protection from singular matrix inversions
   X <- tryCatch(
-    expr = { solve( t(D)%*%D ) },
-    error = function(e) { return( MASS::ginv( t(D)%*%D ) ) }
+    # expr = { solve( t(D)%*%D ) },
+    # error = function(e) { return( MASS::ginv( t(D)%*%D ) ) }
+    expr = { solve( crossprod(D) ) },
+    error = function(e) { return( MASS::ginv( crossprod(D) ) ) }
   )
   est <- j %*% X %*% i
 
@@ -48,17 +50,24 @@ update_obj <- function(dm_old, dm_new, lambda, det, dvar) {
   old_p <- penalty(dm, lambda)
   new_p <- penalty(dm_new, lambda)
 
-  return( (det*(1+dvar)-new_p) / (det-old_p) - 1 )
+  dopt <- (det*(1+dvar)-new_p) / (det-old_p) - 1 
+  if (is.na(dopt)) {
+    dopt <- 0
+  }
+  return(dopt)
 } # end update_obj
 
 #-- Fedorov --------------------------
-fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
+fedorov <- function(dm, candidate_set, n, lambda=0, iter=100, return_iter=FALSE, debug=FALSE) {
   # fedorov algorithm find d-optimal design
   # params:
     # dm: Design Matrix object
     # candidate_set: matrix of all possible combinations of attributes
     # n: number of rows
     # lambda: weight for slack penalties
+    # iter: maximal number of iterations
+    # return_iter: whether to include total number of iterations in run in output
+    # debug: whether to print debugging logs
   # returns: optimal design
   
   # set inital values of algorithm
@@ -67,7 +76,8 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
   obj <- doptimality(dm, lambda, how='det')
 
   # preserve deterimant for use in estimator
-  det <- as.numeric(determinant(t(dm$X)%*%dm$X)$modulus)
+  det <- as.numeric(determinant(crossprod(dm$X) )$modulus)
+  # det <- as.numeric(determinant(t(dm$X)%*%dm$X)$modulus)
   
   # iterate until the improvement in D-optimality is minimal or 100 iterations is reached
   while ((obj_delta_best > 10e-6) && (n_iter < iter)) {
@@ -103,16 +113,19 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
             dvar_best <- dvar
             obj_delta_best <- obj_delta
             obj_best <- obj_test
-  
-            # print(paste(paste("Iteration", n_iter, "candidate_set swap", i, sep=" "), dvar_best, obj_delta_best, obj_best, sep=" | "))
-            print(
-              paste(
-                paste("Iteration", n_iter, "design", i, "candidate", j, sep=" "), 
-                round(obj_delta_best,5), 
-                round(obj_best,5), 
-                sep=" | "
-              )
-            )
+            
+            if (debug) {
+              # print(paste(paste("Iteration", n_iter, "candidate_set swap", i, sep=" "), dvar_best, obj_delta_best, obj_best, sep=" | "))
+              print(
+                paste(
+                  paste("Iteration", n_iter, "design", i, "candidate", j, sep=" "), 
+                  round(obj_delta_best,5), 
+                  round(obj_best,5), 
+                  sep=" | "
+                )
+              )              
+            }
+
           } else {
             next
           }
@@ -124,7 +137,10 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
         } # end for j
       } # end for i
     }) # end system.time
-    print(paste("Iteration", n_iter, "in", round(iter_time[3],4), "seconds", sep=" "))
+    
+    if (debug) {
+      print(paste("Iteration", n_iter, "in", round(iter_time[3],4), "seconds", sep=" "))
+    }
 
     ### updates
     if (is.null(dm_best)) {
@@ -149,8 +165,16 @@ fedorov <- function(dm, candidate_set, n, lambda=0, iter=100) {
   } else {
     print(paste("Convergence achieved in ",n_iter," iterations"))
   }
-  print(paste("DEBUG: internal objfun - ",obj))
-  return(dm)
+  if (debug) {
+    print(paste("DEBUG: internal objfun - ",obj))
+  }
+  
+  if (return_iter) {
+    return(list(dm, n_iter))
+  }
+  else {
+    return(dm)
+  }
 } # end fedorov
 
 # asdf

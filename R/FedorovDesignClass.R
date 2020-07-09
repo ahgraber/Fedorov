@@ -55,7 +55,8 @@ DesignMatrix$methods(
     # generates matrix based on distributions
     
     .self$X <- matrix()
-
+    .self$dslacks <- list()
+    
     if (.self$cholesky) { .self$L <- matrix() }
     
     # create column for each attribute
@@ -86,12 +87,13 @@ DesignMatrix$methods(
       .self$values[[j]] <- vals
       
       # calculate slacks
-      .self$dslacks <- list()
+      
       vals <- c()
       for (k in 1:.self$levels[j]-1) {
         vals <- append(vals, length(which(.self$values[[j]]==k)))
       }
       .self$dslacks[[j]] <- .self$dist[[j]]*.self$n - vals
+      
       
     } # end for j
     
@@ -100,8 +102,13 @@ DesignMatrix$methods(
     
     if (.self$cholesky) {
       # save cholesky
-      A <- t(.self$X)%*%.self$X
-      .self$L <- try(t(chol(A)))      
+      # A <- t(.self$X)%*%.self$X
+      A <- crossprod(.self$X)
+      # .self$L <- try(t(chol(A)))      
+      .self$L <- tryCatch(
+        expr = { t(chol(A))},
+        error = function(e) { return( t(Matrix::chol(A))) }
+      )
     }
 
 
@@ -276,8 +283,8 @@ doptimality <- function(dm, lambda=0, how='chol') {
 }
 
 objective <- function(dm) {
-  obj <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
-  # obj <- det( t(dm$X)%*%dm$X ) / nrow(dm$X)
+  obj <- (100 * det( crossprod(dm$X) )^(1/ncol(dm$X)))/ nrow(dm$X)
+  # obj <- (100 * det( t(dm$X)%*%dm$X )^(1/ncol(dm$X)))/ nrow(dm$X)
   return(obj)
 }
 

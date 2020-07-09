@@ -1,0 +1,287 @@
+---
+title: "Fedorov Experiments"
+output: html_notebook
+---
+```{r warning=FALSE}
+# Load all components
+here <- dirname(rstudioapi::getSourceEditorContext()$path)
+source(paste(here,"FedorovDesignClass.R",sep="/")) # ignore error
+source(paste(here,"Fedorov.R",sep="/")) 
+source(paste(here,"FedorovGA.R",sep="/")) 
+library(AlgDesign)
+library(tidyverse)
+```
+
+# Controls
+``` {R}
+# experiment size
+size <- 'small'
+
+# constraints
+lmda <- 0
+iter <- 100
+```
+
+
+# Initialize DesignMatrix for small experiment
+
+```{r}
+# how many cards?
+if (size == 'small'){
+  n <- 8
+} else if (size == 'medium') {
+  n <- 16
+} else if (size == 'large') {
+  n <- 40
+} else {
+  stop('Error in "size"')
+}
+
+# create DesignMatrix object
+dm <- DesignMatrix(n=n, cholesky=T)
+
+# create attributes
+## base-case for 'small' design
+dm$add_attribute(name="age", levels=3, dist=c(25,50,25))
+dm$add_attribute(name="gender", levels=2, dist=c(50,50))
+dm$add_attribute(name="bmi", levels=3, dist=c(25,25,50))
+
+## add add'l attributes for med/large
+if (size == 'medium') {
+  dm$add_attribute(name="race", levels=4, dist=c(40,20,20,20))
+  dm$add_attribute(name="dia", levels=2, dist=c(50,50))
+  dm$add_attribute(name="ldl", levels=3, dist=c(25,50,25))
+  dm$add_attribute(name="bp", levels=3, dist=c(25,50,25))
+  dm$add_attribute(name="a1c", levels=4, dist=c(25,25,25,25))
+}
+if (size == 'large') {
+  dm$add_attribute(name="angn", levels=3, dist=c(50,25,25))
+  dm$add_attribute(name="ren", levels=3, dist=c(50,25,25))
+  dm$add_attribute(name="srcl", levels=3, dist=c(50,25,25))
+  dm$add_attribute(name="uacr", levels=3, dist=c(33,33,34))
+  dm$add_attribute(name="strk", levels=2, dist=c(75,25))
+  dm$add_attribute(name="ptx", levels=4, dist=c(25,25,25,25))
+  dm$add_attribute(name="hist", levels=3, dist=c(50,25,25))
+  dm$add_attribute(name="smk", levels=3, dist=c(50,25,25))
+}
+
+# add interactions
+## no interactions for 'small' design
+if (size == 'medium') {
+  dm$add_interaction(n1="dia", n2="a1c", l1=0, l2=3, eq=F) # nondiabetics can't have high a1c
+  dm$add_interaction(n1="dia", n2="a1c", l1=1, l2=0, eq=F) # diabetics can't have low a1c
+}
+if (size == 'large') {
+  dm$add_interaction(n1="bp", n2="ptx", l1=3, l2=0, eq=F) # patients with high bp cannot be untreated
+}
+
+### generate candidate set 
+candidate_set <- gen.factorial(dm$levels, factors="all")
+# convert to numeric matrix
+indx <- sapply(candidate_set, is.factor)
+candidate_set[,indx] <- lapply(candidate_set[,indx], function(x) as.numeric(as.character(x)))
+candidate_set <- as.matrix(candidate_set)
+# zero base
+candidate_set <- candidate_set-1
+
+### generate design
+dm$generate_design()
+
+cat("Example Design Class Object\n--------\n")
+cat("names: \n", dm$names, "\n")
+cat("\nvalues: \n")
+dm$values
+cat("\ninteraction slacks: \n")
+dm$islacks
+cat("\ndistribution slacks: \n")
+dm$dslacks
+cat("\ndesign matrix: \n")
+dm$X
+```
+
+# Long run test
+
+```{r warning=FALSE, include=FALSE}
+out_df <- data.frame()
+
+# loop conditions
+trial <- 1
+attempts <- 1000
+while (trial <= attempts) {
+  print(paste("Trial: ", trial))
+  dm$generate_design()
+  
+  # duplicate design matrix for testing
+  dm_fed <- dm$copy(shallow=T)
+  dm_fed$set_cholesky(cholesky=F)
+  dm_ga <- dm$copy(shallow=T)
+  
+  # test initial optimality
+  init_dopt <- doptimality(dm, lambda=lmda, how='det')
+  
+  # run algos
+  f_time <- system.time({
+    fed_out <- tryCatch(
+      expr = {fedorov(dm_fed, candidate_set, n, lambda=lmda, iter=iter, return_iter=TRUE)},
+      error = function(e) {
+        message("Error in Fedorov: ")
+        print(dm$X)        
+        message(paste("Returns error: ", e))
+        return(NULL)
+      }
+    )
+    if (is.null(fed_out)) {
+      message(paste("Restarting loop: ", trial))
+      next
+    } 
+  })
+  f_DM <- fed_out[[1]]
+  f_iters <- fed_out[[2]]  
+  f_dopt <- doptimality(f_DM, lambda=lmda, how='det')
+
+  ga_time <- system.time({
+    ga_out <- tryCatch(
+      expr = {gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda, return_iter=TRUE)},
+      error = function(e) {
+        message("Error in GA: ")
+        print(dm$X)
+        message(paste("Returns error: ", e))
+        return(NULL)
+      }
+    )
+    if (is.null(fed_out)) {
+      message(paste("Restarting loop: ", trial))
+      next
+    }
+  })
+  
+  ga_DM <- ga_out[[1]]
+  ga_iters <- ga_out[[2]]      
+  ga_dopt <- doptimality(ga_DM, lambda=lmda, how='det')
+
+  # preserve run data
+  fedorov_out <- c(trial, 'fedorov', init_dopt, f_iters, f_time[['elapsed']], f_dopt)
+  out_df <- rbind(out_df, fedorov_out, stringsAsFactors=FALSE)
+  genetic_out <- c(trial, 'genetic', init_dopt, ga_iters, ga_time[['elapsed']], ga_dopt)
+  out_df <- rbind(out_df, genetic_out, stringsAsFactors=FALSE)
+  
+  trial <- trial + 1
+}
+
+colnames(out_df) <- c('trial', 'algo', 'init_dopt', 'iters', 'time', 'final_dopt')
+out_df$init_dopt <- as.numeric(out_df$init_dopt)
+out_df$iters <- as.numeric(out_df$iters)
+out_df$time <- as.numeric(out_df$time)
+out_df$final_dopt <- as.numeric(out_df$final_dopt)
+write.csv(out_df, paste0('/Users/mithras/Desktop/FedorovTest_lmda', lmda, '_', size, '.csv'), row.names=FALSE)
+
+print(paste('Test with lmda =', lmda, 'completed. CSV saved.'))
+```
+
+# Stats
+``` {R}
+size <- 'small'
+```
+
+## Run stats on tests with lmda = 1
+* average # iterations
+* average time to solve
+* averate time / iteration
+* average d-optimality of sol'n
+
+```{r}
+if (!exists('lmda1_df')) {
+  lmda1_df <- read.csv(paste0('/Users/mithras/Desktop/FedorovTest_lmda1_',size,'.csv'), header=TRUE)
+}
+lmda1_df
+
+lmda1_df$itertime <- lmda1_df$time / lmda1_df$iters
+
+lmda1_df %>%
+  group_by(algo) %>%
+  summarize(
+    iters = mean(iters),
+    time = mean(time),
+    itertime = mean(itertime),
+    final_dopt = mean(final_dopt)
+  )
+
+```
+
+## How many times did fedorov outperform GA?
+``` {R}
+lmda1_df %>%
+  group_by(algo) %>%
+  count(final_dopt)
+
+```
+
+
+## Sig. testing for differences btwn algos
+
+```{R}
+print('T-test for equivalence of average runtime,  If p < 0.5, reject.')
+t.test(time ~ algo, data = lmda1_df, paired=TRUE)$p.value
+
+print('T-test for equivalence of average final doptimality,  If p < 0.5, reject.')
+t.test(final_dopt ~ algo, data = lmda1_df, paired=TRUE)$p.value
+```
+
+
+## Run stats on tests with lmda = 0
+* average # iterations
+* average time to solve
+* averate time / iteration
+* average d-optimality of sol'n
+
+```{r}
+if (!exists('lmda0_df')) {
+  lmda0_df <- read.csv(paste0('/Users/mithras/Desktop/FedorovTest_lmda1_',size,'.csv'), header=TRUE)
+}
+lmda0_df
+
+lmda0_df$itertime <- lmda0_df$time / lmda0_df$iters
+
+lmda0_df %>%
+  group_by(algo) %>%
+  summarize(
+    iters = mean(iters),
+    time = mean(time),
+    itertime = mean(itertime),
+    final_dopt = mean(final_dopt)
+  )
+
+```
+
+## How many times did fedorov outperform GA?
+``` {R}
+lmda0_df %>%
+  group_by(algo) %>%
+  count(final_dopt)
+
+```
+
+
+## Sig. testing for differences btwn algos
+
+```{R}
+print('T-test for equivalence of average runtime,  If p < 0.5, reject.')
+t.test(time ~ algo, data = lmda0_df, paired=TRUE)$p.value
+
+print('T-test for equivalence of average final doptimality,  If p < 0.5, reject.')
+t.test(final_dopt ~ algo, data = lmda0_df, paired=TRUE)$p.value
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+

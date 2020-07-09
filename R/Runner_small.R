@@ -13,19 +13,20 @@ n <- 8
 dm <- DesignMatrix(n=n, cholesky=T)
 
 # create attributes
-dm$add_attribute(name="body", levels=3, dist=c(25,50,25))
-dm$add_attribute(name="engine", levels=2, dist=c(50,50))
-dm$add_attribute(name="seats", levels=4, dist=c(25,25,25,25))
+dm$add_attribute(name="age", levels=3, dist=c(25,50,25))
+dm$add_attribute(name="gender", levels=2, dist=c(50,50))
+dm$add_attribute(name="bmi", levels=3, dist=c(25,25,50))
 
 # generate
 dm$generate_design()
 
 # add interacts
-dm$add_interaction(n1="body", n2="seats", l1=0, l2=3, eq=F)
-dm$add_interaction("body","seats",1,0,F)
+# dm$add_interaction(n1="body", n2="seats", l1=0, l2=3, eq=F)
+# dm$add_interaction("body","seats",1,0,F)
 
 # set penalty
 lmda <- 1
+iter <- 100
 
 # view attributes of dm
 dm$names
@@ -69,18 +70,16 @@ candidate_set <- candidate_set-1
 
 ## -- FEDOROV --------------------------------------------
 f_time <- system.time({
-  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda, iter=20)
+  f_DM <- fedorov(dm_fed, candidate_set, n, lambda=lmda, iter=iter, return_iter=FALSE, debug=TRUE)
 })
-# f_DM
 f_DM$X
 doptimality(f_DM, lambda=lmda, how='det')
 doptimality(f_DM, lambda=lmda, how='chol')
 sumfisherz(f_DM, lambda=lmda)
 
 ## -- FEDOROV + CHOLESKY -----------------------------------
-### generate candidate set 
 fc_time <- system.time({
-  fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda, iter=20)
+  fc_DM <- fedorov_chol(dm_chol, candidate_set, n, lambda=lmda, iter=iter, return_iter=FALSE, debug=TRUE)
 })
 # fc_DM
 fc_DM$X
@@ -90,7 +89,7 @@ sumfisherz(fc_DM, lambda=lmda)
 
 ## -- GENETIC + CHOLESKY -----------------------------------
 ga_time <- system.time({
-  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda)
+  ga_DM <- gen_alg(dm_ga, pop=16, gens=1000, test='doptimality', lambda=lmda, return_iter=FALSE, debug=TRUE)
 })
 # ga_DM
 ga_DM$X
@@ -117,3 +116,5 @@ ga_time
 doptimality(ga_DM, lambda=lmda, how='det')
 doptimality(ga_DM, lambda=lmda, how='chol')
 sumfisherz(ga_DM, lambda=lmda)
+
+

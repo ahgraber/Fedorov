@@ -163,13 +163,17 @@ sorter <- function(herd, dir) {
 } # end sorter
 
 # genetic algorithm
-gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
+gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE, debug=FALSE) {
   # genetic algorithm to find d-optimal design
   # params:
     # dm: Design Matrix object
     # pop: population size
     # gens: int, maximum number of generations
     # test: objective function to use
+    # lambda: weight for slack penalties
+    # how: use cholesky updates
+    # return_iter: whether to include total number of iterations in run in output
+    # debug: whether to print debugging logs
   # returns: optimal design
   
   if (pop < 16){ stop('Suggested population minimum of 16') }
@@ -188,7 +192,9 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
   alpha <- 0.4 # probability threshold; lower increases variation/mutation
 
   ### create herd (list of (dval, DesignMatrix object) tuples)
-  print('Creating Generation 0')
+  if (debug) {
+    print('Creating Generation 0')
+  }
   herd <- list()
   for (p in 1:pop) {
     new <- dm$copy(shallow=TRUE)
@@ -279,9 +285,17 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol') {
       # top <- herd[[1]]
       top <- herd[[1]][[1]]
     })
-    print(paste(paste("Generation", g, "in", round(gen_time[3],4), "seconds", sep=" "), round(top,5), sep=" | "))
+    if (debug) {
+      print(paste(paste("Generation", g, "in", round(gen_time[3],4), "seconds", sep=" "), round(top,5), sep=" | "))
+    }
   } # end while
   
-  print(paste("Convergence achieved in ",g," iterations"))
-  return(herd[[1]][[2]])
+  print(paste("Convergence achieved in ", g," iterations"))
+  
+  if (return_iter) {
+    return(list(herd[[1]][[2]], g))
+  } else {
+    return(herd[[1]][[2]])
+  }
+  
 } # end gen_alg
