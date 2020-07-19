@@ -162,7 +162,7 @@ sorter <- function(herd, dir) {
   }
 } # end sorter
 
-# genetic algorithm
+#-- genetic algorithm  ---------------------------------------
 gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE, debug=FALSE) {
   # genetic algorithm to find d-optimal design
   # params:
