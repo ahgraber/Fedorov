@@ -163,7 +163,7 @@ sorter <- function(herd, dir) {
 } # end sorter
 
 #-- genetic algorithm  ---------------------------------------
-gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE, debug=FALSE) {
+gen_alg <- function(dm, pop, gens, test, alpha=0.25, lambda=0, how='chol', return_iter=FALSE, debug=FALSE) {
   # genetic algorithm to find d-optimal design
   # params:
     # dm: Design Matrix object
@@ -189,7 +189,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE
     stop("Test value not in c('doptimality','sumfisherz')")
   }
 
-  alpha <- 0.4 # probability threshold; lower increases variation/mutation
+  alpha <- 0.17 # probability threshold; lower increases variation/mutation
 
   ### create herd (list of (dval, DesignMatrix object) tuples)
   if (debug) {
@@ -213,7 +213,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE
   
   g <- 1  # initialize iterator
   converge <- 0 # initialize convergence criteria counter
-  while ((g < gens) && (converge < log2(gens))) {
+  while ((g < gens) && (converge < log2(gens)+10)) {
     # stop if reach maximum generations OR 
     # if difference between top designs remains small for some number of generations
     
@@ -264,6 +264,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE
           # if the change in objval (new - old) 0 and small pos number, system is converging
             # smallest possible change is 0 (i.e., same best design) b/c preserving elites
           # if converging, count as a converge step to potentially break out of while loop
+          top <- herd[[1]][[1]]
           converge <- converge+1
         } else {
           # if not a converge step, reset converge coutner to 0
@@ -275,6 +276,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE
           # if the change in objval (new - old) small neg number and 0, system is converging
             # largest possible change is 0 (i.e., same best design) b/c preserving elites
           # if converging, count as a converge step to potentially break out of while loop
+          top <- herd[[1]][[1]]
           converge <- converge+1
         } else {
           # if not a converge step, reset converge coutner to 0
@@ -282,8 +284,7 @@ gen_alg <- function(dm, pop, gens, test, lambda=0, how='chol', return_iter=FALSE
         }
       }
   
-      # top <- herd[[1]]
-      top <- herd[[1]][[1]]
+      # top <- herd[[1]][[1]]
     })
     if (debug) {
       print(paste(paste("Generation", g, "in", round(gen_time[3],4), "seconds", sep=" "), round(top,5), sep=" | "))
