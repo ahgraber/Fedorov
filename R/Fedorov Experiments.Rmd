@@ -18,8 +18,7 @@ library(tidyverse)
 size <- 'medium'
 
 # constraints
-lmda <- 0
-iter <- 100
+lmda <- 1
 ```
 
 
@@ -29,12 +28,15 @@ iter <- 100
 # set `n` cards and `trials` optimization attempts?
 if (size == 'small'){
   n <- 8
+  iter <- 50
   trials <- 500
 } else if (size == 'medium') {
   n <- 16
+  iter <- 100
   trials <- 25
 } else if (size == 'large') {
   n <- 40
+  iter <- 200
   trials <- 1
 } else {
   stop('Error in "size"')
