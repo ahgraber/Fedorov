@@ -1,0 +1,18 @@
+# Fedorov dockerfile
+FROM rocker/tidyverse:3.6.1
+
+RUN install2.r --error \
+    --deps TRUE \
+    AlgDesign \
+    MASS
+
+# VOLUME /home/rstudio/fedorov
+
+# COPY FedorovDesignClass.R /home/rstudio/fedorov/FedorovDesignClass.R
+# COPY Fedorov.R /home/rstudio/fedorov/Fedorov.R
+# COPY FedorovGA.R /home/rstudio/fedorov/FedorovGA.R
+# COPY FedorovExperiments.Rmd /home/rstudio/fedorov/FedorovExperiments.Rmd
+
+# docker build -t fedorov:3.6.1 .
+# docker run -de PASSWORD=<PASSWORD> --rm -p HOSTPORT:CONTAINERPORT fedorov:3.6.1  
+# docker run -de PASSWORD=12345 --rm -p 8787:8787 -v /Users/mithras/Github/Fedorov/R:/home/rstudio/Fedorov fedorov:3.6.1  
